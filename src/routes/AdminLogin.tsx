@@ -1,5 +1,5 @@
 import { Box, Button, Text, TextInput } from "@primer/react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { VerifyAdminKey } from "../utils/AdminUtil";
 import { useCookies } from "react-cookie";
 import { useNavigate } from "react-router-dom";
@@ -7,9 +7,15 @@ import { useNavigate } from "react-router-dom";
 export function AdminLogin() {
     const [errorMessage, setErrorMessage] = useState("");
     const [success, setSuccess] = useState(false);
-    const [_, setCookie, removeCookie] = useCookies();
+    const [cookies, setCookie, removeCookie] = useCookies();
     const navigate = useNavigate();
     const KeyInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (cookies["AdminKey"])
+            navigate("/admin");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <Box>

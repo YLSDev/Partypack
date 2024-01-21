@@ -1,3 +1,8 @@
 .content {
     padding: 10px;
 }
+
+.songCategory {
+    display: inline-flex;
+    gap: 10px;
+}

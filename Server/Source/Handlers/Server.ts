@@ -51,6 +51,8 @@ Initialize();
 // set up both utils for usage
 import { LoadSongs } from "../Modules/FestivalUtil";
 import { CacheFortnitePages } from "../Modules/PagesUtil";
+import axios from "axios";
 
+axios.defaults.validateStatus = () => true;
 LoadSongs();
 CacheFortnitePages();

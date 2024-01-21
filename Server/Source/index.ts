@@ -1,6 +1,7 @@
 import { config } from "dotenv";
 config();
 
+import "./Handlers/Database";
 import "./Handlers/Server";
 
 /*

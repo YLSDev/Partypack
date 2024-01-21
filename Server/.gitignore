@@ -130,3 +130,7 @@ dist
 .pnp.*
 
 bin/
+
+*.db
+*.db-shm
+*.db-wal
