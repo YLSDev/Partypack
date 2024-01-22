@@ -42,9 +42,23 @@ App.get("/discord", async (req, res) => {
             Library: []
         }).save();
 
+    const JWT = jwt.sign({ ID: UserData.data.id }, JWT_KEY!, { algorithm: "HS256" });
+    const UserDetails = Buffer.from(JSON.stringify({ ID: UserData.data.id, Username: UserData.data.username, GlobalName: UserData.data.global_name, Avatar: `https://cdn.discordapp.com/avatars/${UserData.data.id}/${UserData.data.avatar}.webp` })).toString("base64");
+    if (req.query.state) {
+        try {
+            const Decoded = JSON.parse(Buffer.from(decodeURI(req.query.state as string), "base64").toString("utf-8"));
+            if (Decoded.Client === "PartypackerDesktop")
+                return res.redirect(`http://localhost:14968/?token=${encodeURI(JWT)}&user=${encodeURI(UserDetails)}`)
+            else
+                return res.status(400).send("Unsupported API client."); // idk maybe in the future we will maek more clients
+        } catch {
+            return res.status(400).send("Invalid state.");
+        }
+    }
+
     res
-        .cookie("Token", jwt.sign({ ID: UserData.data.id }, JWT_KEY!, { algorithm: "HS256" }))
-        .cookie("UserDetails", Buffer.from(JSON.stringify({ ID: UserData.data.id, Username: UserData.data.username, GlobalName: UserData.data.global_name, Avatar: `https://cdn.discordapp.com/avatars/${UserData.data.id}/${UserData.data.avatar}.webp` })).toString("base64"))
+        .cookie("Token", JWT)
+        .cookie("UserDetails", UserDetails)
         .redirect(`${DASHBOARD_ROOT}/profile`);
 })
 
