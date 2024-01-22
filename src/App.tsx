@@ -9,6 +9,7 @@ import { AdminTrackList } from "./routes/AdminTrackList";
 import { AdminHome } from "./routes/AdminHome";
 import { AdminLogin } from "./routes/AdminLogin";
 import { Download } from "./routes/Download";
+import { Tracks } from "./routes/Tracks";
 import { Profile } from "./routes/Profile";
 import { SiteContext, SiteState } from "./utils/State";
 import merge from "deepmerge";
@@ -36,6 +37,7 @@ function App() {
 									{/* User-accessible routes */}
 									<Route path="/" element={<Home />} />
 									<Route path="/download" element={<Download />} />
+									<Route path="/tracks" element={<Tracks />} />
 									<Route path="/profile" element={<Profile />} />
 
 									{/* Admin routes */}

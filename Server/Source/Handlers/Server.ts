@@ -1,7 +1,7 @@
 import e from "express"
 import fs from "fs";
 import { BODY_SIZE_LIMIT, COOKIE_SIGN_KEY, DASHBOARD_ROOT, ENDPOINT_AUTHENTICATION_ENABLED, ENDPOINT_AUTH_HEADER, ENDPOINT_AUTH_VALUE, IS_DEBUG, PORT, PROJECT_NAME, SERVER_URL } from "../Modules/Constants";
-import { Msg, Warn } from "../Modules/Logger";
+import { Debug, Msg, Warn } from "../Modules/Logger";
 import { italic, magenta, red, yellow } from "colorette";
 import cookieParser from "cookie-parser";
 import path from "path";
@@ -30,6 +30,7 @@ async function Initialize() {
         if (ENDPOINT_AUTHENTICATION_ENABLED && req.header(ENDPOINT_AUTH_HEADER as string) !== ENDPOINT_AUTH_VALUE)
             return res.status(403).send(`${SERVER_URL} is currently locked behind authentication. Come back later!`);
 
+        Debug(req.path);
         next();
     })
 
@@ -41,6 +42,8 @@ async function Initialize() {
 
         Msg(`Loaded route ${italic(File)}!`);
     }
+
+    App.use((_, res) => res.status(404).json({ errorMessage: "Not Found" }));
     
     App.listen(PORT, () => Msg(`${magenta(PROJECT_NAME)} now up on port ${magenta(PORT)} ${(IS_DEBUG ? red("(debug environment)") : "")}`));
 }
@@ -48,11 +51,7 @@ async function Initialize() {
 Initialize();
 
 // ! FESTIVAL-SPECIFIC STUFF
-// set up both utils for usage
-import { LoadSongs } from "../Modules/FestivalUtil";
-import { CacheFortnitePages } from "../Modules/PagesUtil";
 import axios from "axios";
 
 axios.defaults.validateStatus = () => true;
-LoadSongs();
-CacheFortnitePages();
+axios.defaults.headers.common["X-Do-Not-Redirect"] = "true";

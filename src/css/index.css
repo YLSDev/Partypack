@@ -1,8 +1,14 @@
 .content {
     padding: 10px;
+    margin-left: 15%;
+    margin-right: 15%;
 }
 
 .songCategory {
     display: inline-flex;
     gap: 10px;
+}
+
+#__primerPortalRoot__ > div {
+    z-index: 1000 !important;
 }

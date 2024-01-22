@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import qs from "querystring";
 import { Response, Router } from "express";
 import { DASHBOARD_ROOT, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, FULL_SERVER_ROOT, JWT_KEY } from "../Modules/Constants";
+import { User } from "../Schemas/User";
 
 const App = Router();
 
@@ -34,6 +35,12 @@ App.get("/discord", async (req, res) => {
         return (await QuickRevokeToken(res, Discord.data.access_token)).status(500).send("Failed to request user data from Discord's services.");
 
     await QuickRevokeToken(res, Discord.data.access_token);
+
+    if (!await User.exists({ where: { ID: UserData.data.id } }))
+        await User.create({
+            ID: UserData.data.id,
+            Library: []
+        }).save();
 
     res
         .cookie("Token", jwt.sign({ ID: UserData.data.id }, JWT_KEY!, { algorithm: "HS256" }))

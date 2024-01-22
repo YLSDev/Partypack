@@ -1,17 +1,18 @@
 import { Router } from "express";
 import { existsSync, readFileSync } from "fs";
-import { AvailableFestivalSongs } from "../Modules/FestivalUtil";
 import { FULL_SERVER_ROOT } from "../Modules/Constants";
 import { CreateBlurl } from "../Modules/BLURL";
+import { Song } from "../Schemas/Song";
 
 const App = Router();
 
-App.get("/song/download/:SongUUID/:File", (req, res) => {
-    const Song = AvailableFestivalSongs.find(x => x.UUID === req.params.SongUUID);
-    if (!Song)
-        return res.sendStatus(404);
+App.get("/song/download/:InternalID/:File", async (req, res) => {
+    //const Song = AvailableFestivalSongs.find(x => x.UUID === req.params.SongUUID);
+    const SongData = await Song.findOne({ where: { ID: req.params.InternalID } });
+    if (!SongData)
+        return res.status(404).json({ errorMessage: "Song not found." });
 
-    const BaseURL = `${FULL_SERVER_ROOT}/song/download/${Song.UUID}/`;
+    const BaseURL = `${FULL_SERVER_ROOT}/song/download/${SongData.ID}/`;
     switch (req.params.File.toLowerCase()) {
         case "master.blurl":
         case "main.blurl":
@@ -22,7 +23,7 @@ App.get("/song/download/:SongUUID/:File", (req, res) => {
                             type: "main",
                             language: "en",
                             url: `${BaseURL}master.blurl`,
-                            data: readFileSync(`${Song.Directory}/Manifest.mpd`).toString().replaceAll("{BASEURL}", BaseURL)
+                            data: readFileSync(`${SongData.Directory}/Manifest.mpd`).toString().replaceAll("{BASEURL}", BaseURL)
                         }
                     ],
                     type: "vod",
@@ -32,11 +33,11 @@ App.get("/song/download/:SongUUID/:File", (req, res) => {
 
         case "manifest":
         case "manifest.mpd":
-            return res.set("content-type", "application/dash+xml").send(Buffer.from(readFileSync(`${Song.Directory}/Manifest.mpd`).toString().replaceAll("{BASEURL}", BaseURL)));
+            return res.set("content-type", "application/dash+xml").send(Buffer.from(readFileSync(`${SongData.Directory}/Manifest.mpd`).toString().replaceAll("{BASEURL}", BaseURL)));
         
         case "cover":
         case "cover.png":
-            return existsSync(`${Song.Directory}/Cover.png`) ? res.set("content-type", "image/png").send(readFileSync(`${Song.Directory}/Cover.png`)) : res.sendStatus(404);
+            return existsSync(`${SongData.Directory}/Cover.png`) ? res.set("content-type", "image/png").send(readFileSync(`${SongData.Directory}/Cover.png`)) : res.sendStatus(404);
 
         // ! we are not risking a lawsuit
         //case "midi.dat": // dont forget to encrypt!
@@ -46,7 +47,7 @@ App.get("/song/download/:SongUUID/:File", (req, res) => {
         case "midi":
         case "midi.mid":
         case "midi.midi": // forget to encrypt!
-            return existsSync(`${Song.Directory}/Data.mid`) ? res.set("content-type", "application/octet-stream").send(readFileSync(`${Song.Directory}/Data.mid`)) : res.sendStatus(404);
+            return existsSync(`${SongData.Directory}/Data.mid`) ? res.set("content-type", "application/octet-stream").send(readFileSync(`${SongData.Directory}/Data.mid`)) : res.sendStatus(404);
     }
     
     if (!/^[\w\-.]+$/g.test(req.params.File))
@@ -55,12 +56,32 @@ App.get("/song/download/:SongUUID/:File", (req, res) => {
     if (!req.params.File.endsWith(".m4s"))
         return res.sendStatus(403);
 
-    if (!existsSync(`${Song.Directory}/Chunks/${req.params.File}`))
+    if (!existsSync(`${SongData.Directory}/Chunks/${req.params.File}`))
         return res.sendStatus(404);
 
     res.set("content-type", "video/mp4")
-    res.send(readFileSync(`${Song.Directory}/Chunks/${req.params.File}`));
-})
+    res.send(readFileSync(`${SongData.Directory}/Chunks/${req.params.File}`));
+});
+
+App.get("/:InternalID", async (req, res) => {
+    const SongData = await Song.findOne({ where: { ID: req.params.InternalID } });
+    if (!SongData)
+        return res.status(404).json({ errorMessage: "Song not found." });
+
+    const BaseURL = `${FULL_SERVER_ROOT}/song/download/${SongData.ID}/`;
+    res.set("content-type", "application/json");
+    res.json({
+        playlist: Buffer.from(readFileSync(`${SongData.Directory}/Manifest.mpd`).toString().replaceAll("{BASEURL}", BaseURL)).toString("base64"),
+        playlistType: "application/dash+xml",
+        metadata: {
+            assetId: "",
+            baseUrls: [ BaseURL ],
+            supportsCaching: true,
+            ucp: "a",
+            version: Math.floor(Date.now() / 1000)
+        }
+    });
+});
 
 export default {
     App
