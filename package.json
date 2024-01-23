@@ -10,7 +10,7 @@
     "publish": "npm run create && ssh mc \"cd /home/PartypackProd; rm -rf ./Out\" && scp -r ./Out mc:/home/PartypackProd && ssh mc \"cd /home/PartypackProd/Out; npm i; pm2 restart PartypackProd --update-env\" && rm -rf ./Out",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "dev:all": "start cmd.exe /k \"cd ./Server && npm run dev\" && vite"
+    "dev:all": "start cmd.exe /k \"cd ./Server && npm run dev:watch\" && vite"
   },
   "dependencies": {
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",

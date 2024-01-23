@@ -17,7 +17,7 @@ export function SiteHeader() {
     useEffect(() => {
         (async () => {
             const Data = await axios.get("/api/discord/url");
-            const Details: UserDetailInterface = cookies["UserDetails"] ? JSON.parse(decodeURI(Buffer.from(cookies["UserDetails"], "base64").toString())) : null;
+            const Details: UserDetailInterface = cookies["UserDetails"] ? JSON.parse(decodeURI(Buffer.from(cookies["UserDetails"], "hex").toString())) : null;
         
             setState({
                 ...state,
