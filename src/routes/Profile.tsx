@@ -120,7 +120,7 @@ export function Profile() {
 												}
 												else
 													toast(Res.data.errorMessage, { type: "error" })
-											}}>Remove from Bookmarks</Button>
+											}}>Remove Bookmark</Button>
 										</Song>;
 									})
 									: <Text>You have no bookmarked songs.</Text>

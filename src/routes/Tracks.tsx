@@ -47,7 +47,7 @@ export function Tracks() {
                                                     }
                                                     else
                                                         toast(Res.data.errorMessage, { type: "error" })
-                                                }}>Remove from Bookmarks</Button> :
+                                                }}>Remove Bookmark</Button> :
                                                 <Button sx={{ width: "100%", marginBottom: 1 }} variant="primary" onClick={async () => {
                                                     if (!state.UserDetails)
                                                     {
