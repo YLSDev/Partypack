@@ -120,11 +120,7 @@ export function Profile() {
 												}
 												else
 													toast(Res.data.errorMessage, { type: "error" })
-<<<<<<< HEAD
-											}}>Remove Bookmark</Button>
-=======
 											}}>Unsubscribe</Button>
->>>>>>> 824392fdeb17b22dee7e03d7a5c6a381fa7ca5a2
 										</Song>;
 									})
 									: <Text>You have no bookmarked songs.</Text>
