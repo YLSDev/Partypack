@@ -12,6 +12,9 @@ export class ForcedCategory extends BaseEntity {
     @Column()
     Activated: boolean;
 
+    @Column()
+    Priority: number;
+
     @ManyToMany(() => Song, { eager: true })
     @JoinTable()
     Songs: Song[];

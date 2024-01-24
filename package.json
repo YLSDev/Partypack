@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "create": "mkdir ./Out && npm run build && mv ./dist ./Out/dist && cd Server && tsc && cd .. && cp ./Server/.env ./Out && cp ./Server/package.json ./Out && cp ./Server/package-lock.json ./Out",
-    "publish": "npm run create && ssh mc \"cd /home/PartypackProd; rm -rf ./Out\" && scp -r ./Out mc:/home/PartypackProd && ssh mc \"cd /home/PartypackProd/Out; npm i; pm2 restart PartypackProd --update-env\" && rm -rf ./Out",
+    "publish": "npm run create && ssh shady \"cd /home/PartypackProd; rm -rf ./Out\" && scp -r ./Out shady:/home/PartypackProd && ssh shady \"cd /home/PartypackProd/Out; npm i; pm2 restart PartypackProd --update-env\" && rm -rf ./Out",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "dev:all": "start cmd.exe /k \"cd ./Server && npm run dev:watch\" && vite"
