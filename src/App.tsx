@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ToastContainer } from "react-toastify";
 import { BaseStyles, ThemeProvider, theme } from "@primer/react";
 import { SiteHeader } from "./components/SiteHeader";
@@ -11,12 +12,12 @@ import { AdminLogin } from "./routes/AdminLogin";
 import { Download } from "./routes/Download";
 import { Tracks } from "./routes/Tracks";
 import { Profile } from "./routes/Profile";
+import { AdminCreateTrack } from "./routes/AdminCreateTrack";
 import { SiteContext, SiteState } from "./utils/State";
 import merge from "deepmerge";
 
 import "react-toastify/dist/ReactToastify.css";
 import "./css/index.css";
-import { useState } from "react";
 
 const DefaultTheme = merge(theme, {}); // we'll use this!! eventually!!!
 
@@ -44,6 +45,7 @@ function App() {
 									<Route path="/admin" element={<VerifyAdmin><AdminHome /></VerifyAdmin>} />
 									<Route path="/admin/login" element={<AdminLogin />} /> {/* this is the only publically available admin endpoint */}
 									<Route path="/admin/tracks" element={<VerifyAdmin><AdminTrackList /></VerifyAdmin>} />
+									<Route path="/admin/tracks/create" element={<VerifyAdmin><AdminCreateTrack /></VerifyAdmin>} />
 								</Routes>
 							</div>
 						</SiteContext.Provider>

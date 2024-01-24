@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { User } from "../Schemas/User";
 import { JwtPayload, verify } from "jsonwebtoken";
 import { IS_DEBUG, JWT_KEY } from "./Constants";
+import j from "joi";
 
 declare global {
     // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -13,7 +14,7 @@ declare global {
 }
 
 export function RequireAuthentication(Relations?: object) {
-    return async (req: Request, res: Response, next: NextFunction) =>{
+    return async (req: Request, res: Response, next: NextFunction) => {
         if (!req.header("X-Partypack-Token") && !req.cookies["Token"] && !req.header("Authorization"))
             return res.status(401).json({ errorMessage: "This endpoint requires authorization." });
 
@@ -31,5 +32,16 @@ export function RequireAuthentication(Relations?: object) {
 
         req.user = UserData;
         next();
+    }
+}
+
+export function ValidateBody(Schema: j.Schema) {
+    return async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            req.body = await Schema.validateAsync(req.body);
+            next();
+        } catch (err) {
+            res.status(400).json({ errorMessage: "Body validation failed.", details: err })
+        }
     }
 }
