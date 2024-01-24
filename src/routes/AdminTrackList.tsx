@@ -35,7 +35,7 @@ export function AdminTrackList() {
                                 }
                                 else
                                     toast(Res.data.errorMessage, { type: "error" })
-                            }}>Add to Bookmarks</Button>
+                            }}>Subscribe</Button>
                             <Button sx={{ width: "100%", marginBottom: 1 }}>View Details</Button>
                             <Button sx={{ width: "100%" }} variant="danger">Disable</Button>
                         </Song>
