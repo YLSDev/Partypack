@@ -47,7 +47,7 @@ export function Tracks() {
                                                     }
                                                     else
                                                         toast(Res.data.errorMessage, { type: "error" })
-                                                }}>Remove from Bookmarks</Button> :
+                                                }}>Unsubscribe</Button> :
                                                 <Button sx={{ width: "100%", marginBottom: 1 }} variant="primary" onClick={async () => {
                                                     if (!state.UserDetails)
                                                     {
@@ -65,7 +65,7 @@ export function Tracks() {
                                                     }
                                                     else
                                                         toast(Res.data.errorMessage, { type: "error" })
-                                                }}>Add to Bookmarks</Button>
+                                                }}>Subscribe</Button>
                                         }
                                     </Song>
                                 })

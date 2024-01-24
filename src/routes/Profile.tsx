@@ -105,7 +105,7 @@ export function Profile() {
 									: <Text>You have no activated songs.</Text>
 							}
 						</Box>
-						<Heading sx={{ marginTop: 2, marginBottom: 2 }}>My Bookmarks</Heading>
+						<Heading sx={{ marginTop: 2, marginBottom: 2 }}>My Subscriptions</Heading>
 						<Box className="songCategory">
 							{
 								bookmarkedSongs.length >= 1 ?
@@ -120,7 +120,7 @@ export function Profile() {
 												}
 												else
 													toast(Res.data.errorMessage, { type: "error" })
-											}}>Remove from Bookmarks</Button>
+											}}>Unsubscribe</Button>
 										</Song>;
 									})
 									: <Text>You have no bookmarked songs.</Text>
