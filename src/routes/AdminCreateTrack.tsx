@@ -1,0 +1,166 @@
+import { ActionList, ActionMenu, FormControl, TextInput, Heading, Button } from "@primer/react";
+import { useRef, useState } from "react";
+import { toast } from "react-toastify";
+import { Buffer } from "buffer/";
+import axios from "axios";
+
+const style = { paddingTop: 3 };
+
+export function AdminCreateTrack() {
+    const formRef = useRef<HTMLFormElement>(null);
+    const [Key, setKey] = useState<string>("Select a key...");
+    const [Scale, setScale] = useState<string>("Select a scale...");
+    const [GuitarStarterType, setGuitarStarterType] = useState<string>("Select the starter type...");
+
+    return (
+        <>
+            <Heading>Create a new song</Heading>
+            <form method="GET" action="" ref={formRef}>
+                <FormControl required={true} sx={style}>
+                    <FormControl.Label>Song Name</FormControl.Label>
+                    <TextInput />
+                </FormControl>
+                <FormControl required={true} sx={style}>
+                    <FormControl.Label>Artist</FormControl.Label>
+                    <FormControl.Caption>If there are multiple artists, separate them with a comma.</FormControl.Caption>
+                    <TextInput />
+                </FormControl>
+                <FormControl required={true} sx={style}>
+                    <FormControl.Label>Album</FormControl.Label>
+                    <TextInput />
+                </FormControl>
+                <FormControl required={true} sx={style}>
+                    <FormControl.Label>Release Year</FormControl.Label>
+                    <TextInput type="number" />
+                </FormControl>
+                <FormControl required={true} sx={style}>
+                    <FormControl.Label>Length</FormControl.Label>
+                    <TextInput type="time" />
+                </FormControl>
+                <FormControl required={true} sx={style}>
+                    <FormControl.Label>Key</FormControl.Label>
+                    <ActionMenu>
+                        <ActionMenu.Button>{Key}</ActionMenu.Button>
+                        <ActionMenu.Overlay width="medium">
+                            {
+                                ["A", "Ab", "B", "Bb", "C", "Cb", "D", "Db", "E", "Eb", "F", "Fb", "G", "Gb"].map(x => {
+                                    return (
+                                        <ActionList.Item onSelect={() => setKey(x)}>
+                                            {x}
+                                        </ActionList.Item>
+                                    )
+                                })
+                            }
+                        </ActionMenu.Overlay>
+                    </ActionMenu>
+                </FormControl>
+                <FormControl required={true} sx={style}>
+                    <FormControl.Label>Scale</FormControl.Label>
+                    <ActionMenu>
+                        <ActionMenu.Button>{Scale}</ActionMenu.Button>
+                        <ActionMenu.Overlay width="medium">
+                            <ActionList.Item onSelect={() => setScale("Minor")}>Minor</ActionList.Item>
+                            <ActionList.Item onSelect={() => setScale("Major")}>Major</ActionList.Item>
+                        </ActionMenu.Overlay>
+                    </ActionMenu>
+                </FormControl>
+                <FormControl required={true} sx={style}>
+                    <FormControl.Label>Lead Type</FormControl.Label>
+                    <FormControl.Caption>This is defining what lead instrument the song is going to start with. You can change the instrument mid-game with [keytar] and [guitar] text events.</FormControl.Caption>
+                    <ActionMenu>
+                        <ActionMenu.Button>{GuitarStarterType}</ActionMenu.Button>
+                        <ActionMenu.Overlay width="medium">
+                            <ActionList.Item onSelect={() => setGuitarStarterType("Guitar")}>Guitar</ActionList.Item>
+                            <ActionList.Item onSelect={() => setGuitarStarterType("Keytar")}>Keytar</ActionList.Item>
+                        </ActionMenu.Overlay>
+                    </ActionMenu>
+                </FormControl>
+                <FormControl required={true} sx={style}>
+                    <FormControl.Label>Tempo</FormControl.Label>
+                    <TextInput type="number" />
+                </FormControl>
+                <FormControl required={true} sx={style}>
+                    <FormControl.Label>MIDI File</FormControl.Label>
+                    <TextInput type="file" />
+                    <FormControl.Caption>You can use the #tools-and-resources channel to find useful resources on how to create MIDIs.</FormControl.Caption>
+                </FormControl>
+                <FormControl required={true} sx={style}>
+                    <FormControl.Label>Cover Image</FormControl.Label>
+                    <TextInput type="file" />
+                    <FormControl.Caption>Must be a 1:1 ratio. Max: 2048x2048, min: 512x512</FormControl.Caption>
+                </FormControl>
+                <FormControl required={true} sx={style}>
+                    <FormControl.Label>Lead Difficulty</FormControl.Label>
+                    <TextInput type="number" />
+                </FormControl>
+                <FormControl required={true} sx={style}>
+                    <FormControl.Label>Drums Difficulty</FormControl.Label>
+                    <TextInput type="number" />
+                </FormControl>
+                <FormControl required={true} sx={style}>
+                    <FormControl.Label>Vocals Difficulty</FormControl.Label>
+                    <TextInput type="number" />
+                </FormControl>
+                <FormControl required={true} sx={style}>
+                    <FormControl.Label>Bass Difficulty</FormControl.Label>
+                    <TextInput type="number" />
+                </FormControl>
+                <Button sx={{ marginTop: 2 }} type="submit" onClick={async e => {
+                    e.preventDefault();
+                    console.log(formRef);
+
+                    if (formRef.current == null)
+                        return;
+
+                    const Name = (formRef.current[0] as HTMLInputElement).value;
+                    const ArtistName = (formRef.current[1] as HTMLInputElement).value;
+                    const Album = (formRef.current[2] as HTMLInputElement).value;
+                    const Year = (formRef.current[3] as HTMLInputElement).value;
+                    const Length = (formRef.current[4] as HTMLInputElement).valueAsNumber / 1000 / 3600 * 60;
+                    //const Key = (formRef.current[5] as HTMLInputElement).value;
+                    //const Scale = (formRef.current[6] as HTMLInputElement).value;
+                    //const GuitarStarterType = (formRef.current[7] as HTMLInputElement).value;
+                    const Tempo = (formRef.current[8] as HTMLInputElement).valueAsNumber;
+                    const Midi = (formRef.current[9] as HTMLInputElement).files![0];
+                    const Cover = (formRef.current[10] as HTMLInputElement).files![0];
+                    const GuitarDifficulty = (formRef.current[11] as HTMLInputElement).valueAsNumber;
+                    const DrumsDifficulty = (formRef.current[12] as HTMLInputElement).valueAsNumber;
+                    const VocalsDifficulty = (formRef.current[13] as HTMLInputElement).valueAsNumber;
+                    const BassDifficulty = (formRef.current[14] as HTMLInputElement).valueAsNumber;
+
+                    const SongData = await axios.post("/admin/api/create/song", {
+                        Name,
+                        ArtistName,
+                        Album,
+                        Year,
+                        Length,
+                        Key,
+                        Scale,
+                        GuitarStarterType,
+                        Tempo,
+                        GuitarDifficulty,
+                        DrumsDifficulty,
+                        VocalsDifficulty,
+                        BassDifficulty
+                    });
+
+                    toast(SongData.data, { type: SongData.status === 200 ? "success" : "error" });
+
+                    if (SongData.status !== 200)
+                        return;
+
+                    const MidiRes = await axios.post("/admin/api/upload/midi", {
+                        Data: Buffer.from(
+                            await Midi.arrayBuffer()
+                        ).toString("hex"),
+                        TargetSong: SongData.data.ID
+                    });
+                    toast(MidiRes.data, { type: MidiRes.status === 200 ? "success" : "error" });
+
+                    const CoverRes = await axios.post("/admin/api/upload/cover", { Data: Buffer.from(await Cover.arrayBuffer()).toString("hex"), TargetSong: SongData.data.ID });
+                    toast(CoverRes.data, { type: CoverRes.status === 200 ? "success" : "error" });
+                }}>Create</Button>
+            </form>
+        </>
+    )
+}

@@ -1,6 +1,10 @@
 import { Router } from "express";
-import { ADMIN_KEY } from "../Modules/Constants";
+import { ADMIN_KEY, FULL_SERVER_ROOT } from "../Modules/Constants";
 import { Song } from "../Schemas/Song";
+import { ValidateBody } from "../Modules/Middleware";
+import { writeFileSync } from "fs";
+import exif from "exif-reader";
+import j from "joi";
 
 const App = Router();
 
@@ -22,7 +26,77 @@ App.get("/test", (_, res) => res.send("Permission check OK"));
 
 App.get("/tracks", async (_, res) => res.json((await Song.find()).map(x => x.Package())));
 
-App.post("/create/song", async (req, res) => res.json(await Song.create(req.body).save()));
+App.post("/create/song",
+ValidateBody(j.object({
+    ID: j.string().uuid(),
+    Name: j.string().required().min(3).max(64),
+    Year: j.number().required().min(1).max(2999),
+    ArtistName: j.string().required().min(1).max(64),
+    Length: j.number().required().min(1),
+    Scale: j.string().valid("Minor", "Major").required(),
+    Key: j.string().valid("A", "Ab", "B", "Bb", "C", "Cb", "D", "Db", "E", "Eb", "F", "Fb", "G", "Gb").required(),
+    Album: j.string().required(),
+    GuitarStarterType: j.string().valid("Keytar", "Guitar").required(),
+    Tempo: j.number().min(20).max(1250).required(),
+    Midi: j.string().uri(),
+    Cover: j.string().uri(),
+    Lipsync: j.string().uri(),
+    BassDifficulty: j.number().required().min(0).max(7),
+    GuitarDifficulty: j.number().required().min(0).max(7),
+    DrumsDifficulty: j.number().required().min(0).max(7),
+    VocalsDifficulty: j.number().required().min(0).max(7)
+})),
+async (req, res) => {
+    res.json(await Song.create(req.body).save())
+});
+
+App.post("/upload/midi",
+ValidateBody(j.object({
+    Data: j.string().hex().required(),
+    TargetSong: j.string().uuid().required()
+})),
+async (req, res) => {
+    const Decoded = Buffer.from(req.body.Data, "hex");
+
+    if (!Decoded.toString().startsWith("MThd"))
+        return res.status(400).send("Uploaded MIDI file is not a valid MIDI.");
+
+    if (!await Song.exists({ where: { ID: req.body.TargetSong } }))
+        return res.status(404).send("The song you're trying to upload a MIDI for does not exist.");
+
+    writeFileSync(`./Saved/Songs/${req.body.TargetSong}/Data.mid`, Decoded);
+    res.send(`${FULL_SERVER_ROOT}/song/download/${req.body.TargetSong}/midi.mid`);
+});
+
+App.post("/upload/cover",
+ValidateBody(j.object({
+    Data: j.string().hex().required(),
+    TargetSong: j.string().uuid().required()
+})),
+async (req, res) => {
+    const Decoded = Buffer.from(req.body.Data, "hex");
+
+    if (!await Song.exists({ where: { ID: req.body.TargetSong } }))
+        return res.status(404).send("The song you're trying to upload a cover for does not exist.");
+
+    try { // todo: fix
+        /*const ImageMetadata = exif(Decoded);
+        if (!ImageMetadata.Image?.ImageWidth || !ImageMetadata.Image?.ImageLength)
+            throw new Error("Invalid image file.");
+
+        if (ImageMetadata.Image.ImageWidth !== ImageMetadata.Image.ImageLength)
+            return res.status(400).send("Image must have a 1:1 ratio.");
+
+        if (ImageMetadata.Image.ImageWidth < 512 || ImageMetadata.Image.ImageWidth > 2048)
+            return res.status(400).send("Image cannot be smaller than 512 pixels and larger than 2048 pixels.");*/
+    } catch (err) {
+        console.error(err)
+        return res.status(400).send("Invalid image file.");
+    }
+
+    writeFileSync(`./Saved/Songs/${req.body.TargetSong}/Cover.png`, Decoded);
+    res.send(`${FULL_SERVER_ROOT}/song/download/${req.body.TargetSong}/cover.png`);
+});
 
 export default {
     App,

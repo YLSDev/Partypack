@@ -58,7 +58,7 @@ export function Profile() {
 						<Dialog isOpen={isActivateDialogOpen} onDismiss={() => setIsActivateDialogOpen(false)} aria-labelledby="header">
 							<Dialog.Header id="header">Activate song</Dialog.Header>
 							<Box p={3}>
-								<Text fontFamily="sans-serif">In order to activate a song for use, you need to sacrifice another song.<br />Please select a song you own to replace:</Text>
+								<Text>In order to activate a song for use, you need to sacrifice another song.<br />Please select a song you own to replace:</Text>
 								<ActionMenu>
 									<ActionMenu.Button>Select a song...</ActionMenu.Button>
 									<ActionMenu.Overlay width="medium">

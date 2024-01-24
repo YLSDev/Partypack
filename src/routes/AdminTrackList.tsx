@@ -21,7 +21,7 @@ export function AdminTrackList() {
 
     return (
         <>
-            <Heading>All tracks (admin) <Button sx={{ marginBottom: 2 }}>Create</Button></Heading>
+            <Heading>All tracks (admin) <Button sx={{ marginBottom: 2 }} onClick={() => navigate("/admin/tracks/create")}>Create</Button></Heading>
             <Box className="songCategory">
                 {
                     tracks.map(x => {

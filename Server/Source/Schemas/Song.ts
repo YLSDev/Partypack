@@ -1,5 +1,8 @@
-import { BaseEntity, BeforeInsert, Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, BeforeInsert, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { FULL_SERVER_ROOT } from "../Modules/Constants";
+import { Rating } from "./Rating";
+import { existsSync, mkdirSync } from "fs";
+import { v4 } from "uuid";
 
 @Entity()
 export class Song extends BaseEntity {
@@ -60,8 +63,16 @@ export class Song extends BaseEntity {
     @Column({ nullable: true })
     Lipsync?: string;
 
+    @OneToMany(() => Rating, R => R.Rated)
+    Ratings: Rating[];
+
     @BeforeInsert()
     Setup() {
+        this.ID = v4();
+        this.Directory = `./Saved/Songs/${this.ID}`;
+        if (!existsSync(this.Directory))
+            mkdirSync(this.Directory);
+
         this.CreationDate = new Date();
     }
 
