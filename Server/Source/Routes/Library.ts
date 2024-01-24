@@ -55,7 +55,7 @@ ValidateBody(j.object({
 })),
 async (req, res) => {
     if (req.user?.BookmarkedSongs.findIndex(x => x.ID.toLowerCase() === req.body.SongID.toLowerCase()) !== -1)
-        return res.status(400).json({ errorMessage: "This song is already bookmarked." });
+        return res.status(400).json({ errorMessage: "You're already subscribed to this song." });
 
     const SongData = await Song.findOne({ where: { ID: req.body.SongID } });
     if (!SongData)
@@ -75,7 +75,7 @@ ValidateBody(j.object({
 async (req, res) => {
     const idx = req.user!.BookmarkedSongs.findIndex(x => x.ID.toLowerCase() === req.body.SongID.toLowerCase());
     if (idx === -1)
-        return res.status(400).json({ errorMessage: "This song is not bookmarked." });
+        return res.status(400).json({ errorMessage: "You arent subscribed to this song." });
 
     req.user?.BookmarkedSongs.splice(idx, 1);
     req.user?.save();

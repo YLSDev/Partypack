@@ -26,16 +26,6 @@ export function AdminTrackList() {
                 {
                     tracks.map(x => {
                         return <Song data={x}>
-                            <Button sx={{ width: "100%", marginBottom: 1 }} variant="primary" onClick={async () => {
-                                const Res = await axios.post("/api/library/me/bookmark", { SongID: x.ID });
-                                if (Res.status === 200)
-                                {
-                                    toast("Success!");
-                                    navigate("/profile");
-                                }
-                                else
-                                    toast(Res.data.errorMessage, { type: "error" })
-                            }}>Subscribe</Button>
                             <Button sx={{ width: "100%", marginBottom: 1 }}>View Details</Button>
                             <Button sx={{ width: "100%" }} variant="danger">Disable</Button>
                         </Song>
