@@ -44,6 +44,11 @@ async function Initialize() {
     }
 
     App.use((_, res) => res.status(404).json({ errorMessage: "Not Found" }));
+
+    App.use((err, _, res, __) => {
+        console.error(err);
+        res.status(500).json({ errorMessage: IS_DEBUG ? err : "Oops! Something broke on our end. Sorry!" });
+    })
     
     App.listen(PORT, () => Msg(`${magenta(PROJECT_NAME)} now up on port ${magenta(PORT)} ${(IS_DEBUG ? red("(debug environment)") : "")}`));
 }

@@ -3,7 +3,7 @@ import { createContext } from "react";
 
 export const SiteContext = createContext<IContext>({} as IContext);
 
-export interface UserDetailInterface { ID: string, Username: string, GlobalName: string, Avatar: string }
+export interface UserDetailInterface { ID: string, Username: string, GlobalName: string, Avatar: string, IsAdmin: boolean }
 
 export interface SiteState {
     UserDetails: UserDetailInterface | null;

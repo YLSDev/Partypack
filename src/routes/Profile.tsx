@@ -49,7 +49,7 @@ export function Profile() {
 									{state.UserDetails.GlobalName} (@{state.UserDetails.Username})
 								</PageHeader.Title>
 								<PageHeader.Actions>
-									<Button size="large" variant="danger" onClick={() => { removeCookie("UserDetails"); removeCookie("Token"); setState({ ...state, UserDetails: null }); navigate("/"); }}>Log out</Button>
+									<Button size="large" variant="danger" onClick={() => { removeCookie("UserDetails"); removeCookie("Token"); setState({ ...state, UserDetails: null }); window.location.assign("/") }}>Log out</Button>
 								</PageHeader.Actions>
 							</PageHeader.TitleArea>
 						</PageHeader>

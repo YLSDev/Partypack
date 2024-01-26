@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import qs from "querystring";
 import { Response, Router } from "express";
 import { DASHBOARD_ROOT, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, FULL_SERVER_ROOT, JWT_KEY } from "../Modules/Constants";
-import { User } from "../Schemas/User";
+import { User, UserPermissions } from "../Schemas/User";
 
 const App = Router();
 
@@ -36,14 +36,15 @@ App.get("/discord", async (req, res) => {
 
     await QuickRevokeToken(res, Discord.data.access_token);
 
-    if (!await User.exists({ where: { ID: UserData.data.id } }))
-        await User.create({
+    let DBUser = await User.findOne({ where: { ID: UserData.data.id } });
+    if (!DBUser)
+        DBUser = await User.create({
             ID: UserData.data.id,
             Library: []
         }).save();
 
     const JWT = jwt.sign({ ID: UserData.data.id }, JWT_KEY!, { algorithm: "HS256" });
-    const UserDetails = Buffer.from(JSON.stringify({ ID: UserData.data.id, Username: UserData.data.username, GlobalName: UserData.data.global_name, Avatar: `https://cdn.discordapp.com/avatars/${UserData.data.id}/${UserData.data.avatar}.webp` })).toString("hex")
+    const UserDetails = Buffer.from(JSON.stringify({ ID: UserData.data.id, Username: UserData.data.username, GlobalName: UserData.data.global_name, Avatar: `https://cdn.discordapp.com/avatars/${UserData.data.id}/${UserData.data.avatar}.webp`, IsAdmin: DBUser.PermissionLevel >= UserPermissions.Administrator })).toString("hex")
     if (req.query.state) {
         try {
             const Decoded = JSON.parse(Buffer.from(decodeURI(req.query.state as string), "base64").toString("utf-8"));

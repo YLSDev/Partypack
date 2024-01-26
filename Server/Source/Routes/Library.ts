@@ -75,7 +75,7 @@ ValidateBody(j.object({
 async (req, res) => {
     const idx = req.user!.BookmarkedSongs.findIndex(x => x.ID.toLowerCase() === req.body.SongID.toLowerCase());
     if (idx === -1)
-        return res.status(400).json({ errorMessage: "You arent subscribed to this song." });
+        return res.status(400).json({ errorMessage: "You aren't subscribed to this song." });
 
     req.user?.BookmarkedSongs.splice(idx, 1);
     req.user?.save();
