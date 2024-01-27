@@ -14,7 +14,7 @@ export function AdminCreateTrack() {
 
     return (
         <>
-            <Heading>Create a new song</Heading>
+            <Heading>Create a New Track</Heading>
             <form method="GET" action="" ref={formRef}>
                 <FormControl required={true} sx={style}>
                     <FormControl.Label>Song Name</FormControl.Label>
@@ -34,8 +34,8 @@ export function AdminCreateTrack() {
                     <TextInput type="number" />
                 </FormControl>
                 <FormControl required={true} sx={style}>
-                    <FormControl.Label>Length</FormControl.Label>
-                    <TextInput type="time" />
+                    <FormControl.Label>Length (in seconds)</FormControl.Label>
+                    <TextInput type="number" />
                 </FormControl>
                 <FormControl required={true} sx={style}>
                     <FormControl.Label>Key</FormControl.Label>
@@ -116,7 +116,7 @@ export function AdminCreateTrack() {
                     const ArtistName = (formRef.current[1] as HTMLInputElement).value;
                     const Album = (formRef.current[2] as HTMLInputElement).value;
                     const Year = (formRef.current[3] as HTMLInputElement).value;
-                    const Length = (formRef.current[4] as HTMLInputElement).valueAsNumber / 1000 / 3600 * 60;
+                    const Length = (formRef.current[4] as HTMLInputElement).valueAsNumber;
                     //const Key = (formRef.current[5] as HTMLInputElement).value;
                     //const Scale = (formRef.current[6] as HTMLInputElement).value;
                     //const GuitarStarterType = (formRef.current[7] as HTMLInputElement).value;
@@ -160,6 +160,8 @@ export function AdminCreateTrack() {
                     const CoverRes = await axios.post("/admin/api/upload/cover", { Data: Buffer.from(await Cover.arrayBuffer()).toString("hex"), TargetSong: SongData.data.ID });
                     toast(CoverRes.data, { type: CoverRes.status === 200 ? "success" : "error" });
                 }}>Create</Button>
+
+                
             </form>
         </>
     )
