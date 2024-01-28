@@ -15,6 +15,7 @@ export function Profile() {
 	const [isActivateDialogOpen, setIsActivateDialogOpen] = useState<boolean>(false);
 	const [librarySongs, setLibrarySongs] = useState<unknown[]>([]);
 	const [bookmarkedSongs, setBookmarkedSongs] = useState<unknown[]>([]);
+	const [draftsSongs, setDraftsSongs] = useState<unknown[]>([]);
 	const [availableOverrides, setAvailableOverrides] = useState<{ Name: string, Template: string }[]>([]);
 	const [overriding, setOverriding] = useState<unknown>({});
 	const navigate = useNavigate();
@@ -28,9 +29,9 @@ export function Profile() {
 				return toast("An error has occured while getting your library!", { type: "error" });
 
 			const LibSongs = (await Promise.all(Data.data.Library.map((x: { SongID: string; }) => axios.get(`/api/library/song/data/${x.SongID}`)))).map(x => { return { ...x.data, Override: Data.data.Library.find((y: { SongID: string; }) => y.SongID === x.data.ID).Overriding } });
-			const BookSongs = (await Promise.all(Data.data.Bookmarks.map((x: { ID: string; }) => axios.get(`/api/library/song/data/${x.ID}`)))).map(x => x.data);
 			setLibrarySongs(LibSongs);
-			setBookmarkedSongs(BookSongs);
+			setBookmarkedSongs(Data.data.Bookmarks);
+			setDraftsSongs(Data.data.Created);
 			setAvailableOverrides(Overrides.data);
 		})();
 	}, []);
@@ -117,6 +118,28 @@ export function Profile() {
 												if (Res.status === 200) {
 													bookmarkedSongs.splice(bookmarkedSongs.findIndex(y => y.ID === x.ID), 1);
 													setBookmarkedSongs([...bookmarkedSongs]);
+												}
+												else
+													toast(Res.data.errorMessage, { type: "error" })
+											}}>Unsubscribe</Button>
+										</Song>;
+									})
+									: <Text>You have no bookmarked songs.</Text>
+							}
+						</Box>
+						<Heading sx={{ marginTop: 2, marginBottom: 2 }}>My Drafts & Published Songs</Heading>
+						<Box className="songCategory">
+							{
+								draftsSongs.length >= 1 ?
+								draftsSongs.map(x => {
+										return <Song data={x}>
+											<Button sx={{ width: "100%", marginBottom: 1 }} variant="primary" onClick={() => { setIsActivateDialogOpen(true); setOverriding(x) }} disabled={librarySongs.findIndex(y => y.ID === x.ID) !== -1}>Add to Active</Button>
+											<Button sx={{ width: "100%", marginBottom: 1 }}>Publish</Button>
+											<Button sx={{ width: "100%" }} variant="danger" onClick={async () => {
+												const Res = await axios.post("/api/drafts/delete", { SongID: x.ID });
+												if (Res.status === 200) {
+													draftsSongs.splice(draftsSongs.findIndex(y => y.ID === x.ID), 1);
+													setDraftsSongs([...draftsSongs]);
 												}
 												else
 													toast(Res.data.errorMessage, { type: "error" })

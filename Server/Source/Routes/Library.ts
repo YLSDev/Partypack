@@ -6,9 +6,10 @@ import j from "joi";
 
 const App = Router();
 
-App.get("/me", RequireAuthentication({ BookmarkedSongs: true }), (req, res) => {
+App.get("/me", RequireAuthentication({ BookmarkedSongs: true, CreatedTracks: true }), (req, res) => {
     res.json({
         Bookmarks: req.user?.BookmarkedSongs.map(x => x.Package()),
+        Created: req.user?.CreatedTracks.map(x => x.Package()),
         Library: req.user?.Library
     })
 })
@@ -60,9 +61,12 @@ async (req, res) => {
     if (req.user?.BookmarkedSongs.findIndex(x => x.ID.toLowerCase() === req.body.SongID.toLowerCase()) !== -1)
         return res.status(400).json({ errorMessage: "You're already subscribed to this song." });
 
-    const SongData = await Song.findOne({ where: { ID: req.body.SongID } });
+    const SongData = await Song.findOne({ where: { ID: req.body.SongID }, relations: { Author: true } });
     if (!SongData)
         return res.status(404).json({ errorMessage: "Provided song doesn't exist." });
+
+    if (SongData.IsDraft && SongData.Author.ID !== req.user.ID)
+        return res.status(403).json({ errorMessage: "You cannot subscribe to this track, because it's a draft." });
 
     req.user?.BookmarkedSongs.push(SongData);
     req.user?.save();
@@ -86,10 +90,15 @@ async (req, res) => {
     res.json(req.user?.BookmarkedSongs.map(x => x.Package()));
 })
 
-App.get("/song/data/:InternalID", async (req, res) => {
-    const SongData = await Song.findOne({ where: { ID: req.params.InternalID } });
+App.get("/song/data/:InternalID",
+RequireAuthentication(),
+async (req, res) => {
+    const SongData = await Song.findOne({ where: { ID: req.params.InternalID }, relations: { Author: true } });
     if (!SongData)
-        return res.status(404).json({ errorMessage: "Song not found." });
+        return res.status(404).json({ errorMessage: "Provided song doesn't exist." });
+
+    if (SongData.IsDraft && SongData.Author.ID !== req.user!.ID)
+        return res.status(403).json({ errorMessage: "You cannot use this track, because it's a draft." });
 
     res.json(SongData.Package());
 })

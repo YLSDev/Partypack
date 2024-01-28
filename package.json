@@ -8,12 +8,18 @@
     "build:prod": "vite build",
     "build:stage": "vite build --mode staging",
     
-    "create:prod": "mkdir \"./Out\" && npm run build:prod && move \"./dist\" \"./Out/dist\" && cd \"Server\" && tsc && cd .. && copy \"./Server/.env.prod\" \"./Out/.env\" && copy \"./Server/package.json\" \"./Out/package.json\" && copy \"./Server/package-lock.json\" \"./Out/package-lock.json\"",
-    "publish:prod": "npm run create:prod && ssh partypack \"cd /home/PartypackProd; rm -rf ./Out\" && scp -r \"./Out\" partypack:/home/PartypackProd && ssh partypack \"cd /home/PartypackProd/Out && npm i && pm2 restart PartypackProd --update-env\" && rmdir \"./Out\"",
+    "win:create:prod": "mkdir \"./Out\" && npm run build:prod && move \"./dist\" \"./Out/dist\" && cd \"Server\" && tsc && cd .. && copy \"./Server/.env.prod\" \"./Out/.env\" && copy \"./Server/package.json\" \"./Out/package.json\" && copy \"./Server/package-lock.json\" \"./Out/package-lock.json\"",
+    "win:publish:prod": "npm run create:prod && ssh partypack \"cd /home/PartypackProd; rm -rf ./Out\" && scp -r \"./Out\" partypack:/home/PartypackProd && ssh partypack \"cd /home/PartypackProd/Out && npm i && pm2 restart PartypackProd --update-env\" && rmdir \"./Out\"",
 
-    "create:stage": "mkdir \"./Out\" && npm run build:stage && move \"./dist\" \"./Out/dist\" && cd \"Server\" && tsc && cd .. && copy \"./Server/.env.staging\" \"./Out/.env\" && copy \"./Server/package.json\" \"./Out/package.json\" && copy \"./Server/package-lock.json\" \"./Out/package-lock.json\"",
-    "publish:stage": "npm run create:stage && ssh partypack \"cd /home/PartypackStage; rm -rf ./Out\" && scp -r ./Out partypack:/home/PartypackStage && ssh partypack \"cd /home/PartypackStage/Out && npm i && pm2 restart PartypackStage --update-env\" && rmdir \"./Out\"",
+    "win:create:stage": "mkdir \"./Out\" && npm run build:stage && move \"./dist\" \"./Out/dist\" && cd \"Server\" && tsc && cd .. && copy \"./Server/.env.staging\" \"./Out/.env\" && copy \"./Server/package.json\" \"./Out/package.json\" && copy \"./Server/package-lock.json\" \"./Out/package-lock.json\"",
+    "win:publish:stage": "npm run create:stage && ssh partypack \"cd /home/PartypackStage; rm -rf ./Out\" && scp -r ./Out partypack:/home/PartypackStage && ssh partypack \"cd /home/PartypackStage/Out && npm i && pm2 restart PartypackStage --update-env\" && rmdir \"./Out\"",
     
+    "create:prod": "mkdir ./Out && npm run build:prod && mv ./dist ./Out/dist && cd Server && tsc && cd .. && cp ./Server/.env.prod ./Out/.env && cp ./Server/package.json ./Out && cp ./Server/package-lock.json ./Out",
+    "publish:prod": "npm run create:prod && ssh partypack \"cd /home/PartypackProd; rm -rf ./Out\" && scp -r ./Out partypack:/home/PartypackProd && ssh partypack \"cd /home/PartypackProd/Out && npm i && pm2 restart PartypackProd --update-env\" && rm -rf ./Out",
+
+    "create:stage": "mkdir ./Out && npm run build:stage && mv ./dist ./Out/dist && cd Server && tsc && cd .. && cp ./Server/.env.staging ./Out/.env && cp ./Server/package.json ./Out && cp ./Server/package-lock.json ./Out",
+    "publish:stage": "npm run create:stage && ssh partypack \"cd /home/PartypackStage; rm -rf ./Out\" && scp -r ./Out partypack:/home/PartypackStage && ssh partypack \"cd /home/PartypackStage/Out && npm i && pm2 restart PartypackStage --update-env\" && rm -rf ./Out",
+
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "dev:all": "start cmd.exe /k \"cd ./Server && npm run dev:watch\" && vite"

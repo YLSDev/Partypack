@@ -7,8 +7,9 @@ import { Song } from "../Schemas/Song";
 import { Debug } from "../Modules/Logger";
 import { magenta } from "colorette";
 import { fromBuffer } from "file-type";
-import { writeFileSync } from "fs";
+import { rmSync, writeFileSync } from "fs";
 import { FULL_SERVER_ROOT } from "../Modules/Constants";
+import { UserPermissions } from "../Schemas/User";
 
 const App = Router();
 
@@ -32,7 +33,8 @@ App.post("/create",
     async (req, res) => {
         const SongData = await Song.create({
             ...req.body,
-            IsDraft: true
+            IsDraft: true,
+            Author: req.user!
         }).save();
 
         Debug(`New draft created by ${magenta(req.user!.ID!)} as ${magenta(`${SongData.ArtistName} - ${SongData.Name}`)}`)
@@ -71,11 +73,15 @@ App.post("/upload/cover",
         if (ext !== "png")
             return res.status(404).send("Invalid image file. (supported: png)");
 
-        if (!await Song.exists({ where: { ID: req.body.TargetSong } }))
+        const SongData = await Song.findOne({ where: { ID: req.body.TargetSong }, relations: { Author: true } })
+        if (!SongData)
             return res.status(404).send("The song you're trying to upload a cover for does not exist.");
 
+        if (req.user!.PermissionLevel! < UserPermissions.Administrator && SongData.Author.ID !== req.user!.ID)
+            return res.status(403).send("You don't have permission to upload to this song.");
+
         try {
-            const ImageMetadata = exif(Decoded);
+            /*const ImageMetadata = exif(Decoded);
             if (!ImageMetadata.Image?.ImageWidth || !ImageMetadata.Image?.ImageLength)
                 throw new Error("Invalid image file.");
 
@@ -83,7 +89,7 @@ App.post("/upload/cover",
                 return res.status(400).send("Image must have a 1:1 ratio.");
 
             if (ImageMetadata.Image.ImageWidth < 512 || ImageMetadata.Image.ImageWidth > 2048)
-                return res.status(400).send("Image cannot be smaller than 512 pixels and larger than 2048 pixels.");
+                return res.status(400).send("Image cannot be smaller than 512 pixels and larger than 2048 pixels.");*/
         } catch (err) {
             console.error(err)
             return res.status(400).send("Invalid image file.");
@@ -112,19 +118,23 @@ App.post("/upload/audio",
         await writeFileSync(`./Saved/Songs/${req.body.TargetSong}/Audio.${ext}`, Decoded);
         ffmpeg()
             .input(`./Saved/Songs/${req.body.TargetSong}/Audio.${ext}`)
-            .inputOptions(["-re"])
             .outputOptions([
                 "-map 0",
-                "-c:a aac",
-                "-ar:a:0 48000",
                 "-use_timeline 1",
-                "-adaptation_sets \"id=0,streams=a\"",
                 "-f dash"
             ])
             .output(`./Saved/Songs/${req.body.TargetSong}/Chunks/Manifest.mpd`)
             .on("start", cl => Debug(`ffmpeg running with ${magenta(cl)}`))
-            .on("end", () => Debug("Ffmpeg finished running"))
-            .on("error", (e, stdout, stderr) => { console.error(e); console.log(stdout); console.error(stderr); })
+            .on("end", () => {
+                Debug("Ffmpeg finished running");
+                rmSync(`./Saved/Songs/${req.body.TargetSong}/Audio.${ext}`);
+            })
+            .on("error", (e, stdout, stderr) => {
+                console.error(e);
+                console.log(stdout);
+                console.error(stderr);
+                rmSync(`./Saved/Songs/${req.body.TargetSong}/Audio.${ext}`);
+            })
             .run();
 
         res.send("ffmpeg now running on song.");

@@ -3,14 +3,22 @@ import { existsSync, readFileSync } from "fs";
 import { FULL_SERVER_ROOT } from "../Modules/Constants";
 import { CreateBlurl } from "../Modules/BLURL";
 import { Song } from "../Schemas/Song";
+import { RequireAuthentication } from "../Modules/Middleware";
 
 const App = Router();
 
-App.get("/song/download/:InternalID/:File", async (req, res) => {
+App.get("/song/download/:InternalID/:File",
+RequireAuthentication(),
+async (req, res) => {
     //const Song = AvailableFestivalSongs.find(x => x.UUID === req.params.SongUUID);
-    const SongData = await Song.findOne({ where: { ID: req.params.InternalID } });
+    const SongData = await Song.findOne({ where: { ID: req.params.InternalID }, relations: { Author: true } });
     if (!SongData)
         return res.status(404).json({ errorMessage: "Song not found." });
+
+    console.log(SongData);
+    
+    if (SongData.IsDraft && SongData.Author.ID !== req.user!.ID)
+        return res.status(403).json({ errorMessage: "You cannot use this track, because it's a draft." });
 
     const BaseURL = `${FULL_SERVER_ROOT}/song/download/${SongData.ID}/`;
     switch (req.params.File.toLowerCase()) {
@@ -64,9 +72,12 @@ App.get("/song/download/:InternalID/:File", async (req, res) => {
 });
 
 App.get("/:InternalID", async (req, res, next) => {
-    const SongData = await Song.findOne({ where: { ID: req.params.InternalID } });
+    const SongData = await Song.findOne({ where: { ID: req.params.InternalID }, relations: { Author: true } });
     if (!SongData)
         return next(); // trust me bro
+
+    if (SongData.IsDraft && SongData.Author.ID !== req.user!.ID)
+        return res.status(403).json({ errorMessage: "You cannot use this track, because it's a draft." });
 
     const BaseURL = `${FULL_SERVER_ROOT}/song/download/${SongData.ID}/`;
     res.set("content-type", "application/json");
