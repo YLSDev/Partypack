@@ -1,5 +1,5 @@
 import e from "express"
-import fs from "fs";
+import fs, { existsSync, mkdirSync } from "fs";
 import { BODY_SIZE_LIMIT, COOKIE_SIGN_KEY, DASHBOARD_ROOT, ENDPOINT_AUTHENTICATION_ENABLED, ENDPOINT_AUTH_HEADER, ENDPOINT_AUTH_VALUE, IS_DEBUG, PORT, PROJECT_NAME, SERVER_URL } from "../Modules/Constants";
 import { Debug, Msg, Warn } from "../Modules/Logger";
 import { italic, magenta, red, yellow } from "colorette";
@@ -19,6 +19,11 @@ export const App = e()
     .use(e.urlencoded({ limit: BODY_SIZE_LIMIT, extended: false }));
 
 async function Initialize() {
+    if (!existsSync("./Saved") || !existsSync("./Saved/Songs"))
+        mkdirSync("./Saved/Songs", { recursive: true });
+
+    Debug(`The CWD is ${magenta(process.cwd())}.`);
+
     const Files = fs
         .readdirSync(path.join(".", Symbol.for("ts-node.register.instance") in process ? "Source" : "bin", "Routes"))
         .filter((F) => F.endsWith(".js") || F.endsWith(".ts"));
@@ -43,11 +48,18 @@ async function Initialize() {
         Msg(`Loaded route ${italic(File)}!`);
     }
 
-    App.use((_, res) => res.status(404).json({ errorMessage: "Not Found" }));
+    if (existsSync("./dist")) {
+        Warn(`Detected ${yellow("dist")} folder! Using as static.`);
+        App.use("/", e.static("dist"));
+        App.use("/assets", e.static("dist/assets"));
+    }
 
-    App.use((err, _, res, __) => {
+    App.use("/api/*", (_, res) => res.status(404).json({ errorMessage: "Not Found" }));
+    App.use("*", (_, res) => res.sendFile(path.join(process.cwd(), "dist", "index.html")));
+
+    App.use((err, req, res, _) => {
         console.error(err);
-        res.status(500).json({ errorMessage: IS_DEBUG ? err : "Oops! Something broke on our end. Sorry!" });
+        res.status(500).json({ errorMessage: IS_DEBUG ? err.message : "Oops! Something broke on our end. Sorry!" });
     })
     
     App.listen(PORT, () => Msg(`${magenta(PROJECT_NAME)} now up on port ${magenta(PORT)} ${(IS_DEBUG ? red("(debug environment)") : "")}`));

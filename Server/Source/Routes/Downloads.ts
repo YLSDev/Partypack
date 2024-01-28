@@ -63,10 +63,10 @@ App.get("/song/download/:InternalID/:File", async (req, res) => {
     res.send(readFileSync(`${SongData.Directory}/Chunks/${req.params.File}`));
 });
 
-App.get("/:InternalID", async (req, res) => {
+App.get("/:InternalID", async (req, res, next) => {
     const SongData = await Song.findOne({ where: { ID: req.params.InternalID } });
     if (!SongData)
-        return res.status(404).json({ errorMessage: "Song not found." });
+        return next(); // trust me bro
 
     const BaseURL = `${FULL_SERVER_ROOT}/song/download/${SongData.ID}/`;
     res.set("content-type", "application/json");

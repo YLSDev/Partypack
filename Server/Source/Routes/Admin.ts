@@ -121,37 +121,47 @@ ValidateBody(j.array().items(j.object({
     Songs: j.array().items(j.string().uuid()).unique().min(1).max(20).required(),
     Priority: j.number().min(-50000).max(50000).required(),
     Header: j.string().min(3).max(125).required(),
-    Action: j.string().valid("CREATE", "UPDATE", "DELETE").required()
-})).max(100)),
+    ShouldDelete: j.boolean().required()
+})).max(15)),
 async (req, res) => {
-    const b = req.body as { ID: string, Songs: string[], Priority: number, Header: string, Action: "CREATE" | "UPDATE" | "DELETE" }[];
+    const b = req.body as { ID: string, Songs: string[], Priority: number, Header: string, ShouldDelete: boolean }[];
     const Failures: { Regarding: string, Message: string }[] = [];
     const Successes: { Regarding: string, Message: string }[] = [];
 
     for (const Entry of b) {
-        switch (Entry.Action) {
-            case "CREATE":
-                const Songs = await Promise.all(Entry.Songs.map(x => Song.findOne({ where: { ID: x } })));
-                if (Songs.includes(null)) {
-                    Failures.push({ Regarding: Entry.ID, Message: `Creation request for custom category "${Entry.Header}" tried to request a non-existing song.` });
-                    continue;
-                }
-                break;
+        let Category = await ForcedCategory.findOne({ where: { ID: Entry.ID } });
+        if (Entry.ShouldDelete) { // DELETION
+            if (!Category) {
+                Failures.push({ Regarding: Entry.ID, Message: "Cannot delete non-existent category." });
+                continue;
+            }
 
-            case "DELETE":
-                const DBEntry = await ForcedCategory.findOne({ where: { ID: Entry.ID } });
-                if (!DBEntry) {
-                    Failures.push({ Regarding: Entry.ID, Message: `Custom category "${Entry.ID}" doesn't exist.` });
-                    continue;
-                }
-
-                await DBEntry.remove();
-                Successes.push({ Regarding: Entry.ID, Message: `Successfully removed "${Entry.ID}" from the database.` });
-                break;
-
-            case "UPDATE":
-                break;
+            await Category.remove();
+            Successes.push({ Regarding: Entry.ID, Message: "Successfully deleted category." });
+            continue;
         }
+
+        if (!Category) // CREATION
+            Category = await ForcedCategory.create({
+                Header: Entry.Header,
+                Activated: true,
+                Priority: Entry.Priority,
+                Songs: []
+            });
+
+        // MODIFICATION
+        const Songs = await Promise.all(Entry.Songs.map(x => Song.findOne({ where: { ID: x } })));
+        if (Songs.includes(null)) {
+            Failures.push({ Regarding: Entry.ID, Message: `Cannot modify "${Entry.ID}" songs as it includes a non-existent song` });
+            continue;
+        }
+
+        Category.Header = Entry.Header;
+        Category.Priority = Entry.Priority;
+        Category.Songs = Songs as Song[];
+        Category.save();
+
+        Successes.push({ Regarding: Entry.ID, Message: `Successfully created/modified category "${Category.ID}".` });
     }
 
     res.status(Failures.length > Successes.length ? 400 : 200).json({
@@ -162,5 +172,5 @@ async (req, res) => {
 
 export default {
     App,
-    DefaultAPI: "/admin/api"
+    DefaultAPI: "/api/admin"
 }

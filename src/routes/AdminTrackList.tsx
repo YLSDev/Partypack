@@ -11,7 +11,7 @@ export function AdminTrackList() {
 
     useEffect(() => {
         (async () => {
-            const Tracks = await axios.get("/admin/api/tracks");
+            const Tracks = await axios.get("/api/admin/tracks");
             if (Tracks.status !== 200)
                 return toast("Error while requesting tracks!");
 

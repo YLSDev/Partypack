@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import { Buffer } from "buffer/";
 import axios from "axios";
 
-const style = { paddingTop: 3 };
+const formControlStyle = { paddingTop: 3 };
 
 export function AdminCreateTrack() {
     const formRef = useRef<HTMLFormElement>(null);
@@ -16,28 +16,28 @@ export function AdminCreateTrack() {
         <>
             <Heading>Create a New Track</Heading>
             <form method="GET" action="" ref={formRef}>
-                <FormControl required={true} sx={style}>
+                <FormControl required={true} sx={formControlStyle}>
                     <FormControl.Label>Song Name</FormControl.Label>
                     <TextInput />
                 </FormControl>
-                <FormControl required={true} sx={style}>
+                <FormControl required={true} sx={formControlStyle}>
                     <FormControl.Label>Artist</FormControl.Label>
                     <FormControl.Caption>If there are multiple artists, separate them with a comma.</FormControl.Caption>
                     <TextInput />
                 </FormControl>
-                <FormControl required={true} sx={style}>
+                <FormControl required={true} sx={formControlStyle}>
                     <FormControl.Label>Album</FormControl.Label>
                     <TextInput />
                 </FormControl>
-                <FormControl required={true} sx={style}>
+                <FormControl required={true} sx={formControlStyle}>
                     <FormControl.Label>Release Year</FormControl.Label>
                     <TextInput type="number" />
                 </FormControl>
-                <FormControl required={true} sx={style}>
+                <FormControl required={true} sx={formControlStyle}>
                     <FormControl.Label>Length (in seconds)</FormControl.Label>
                     <TextInput type="number" />
                 </FormControl>
-                <FormControl required={true} sx={style}>
+                <FormControl required={true} sx={formControlStyle}>
                     <FormControl.Label>Key</FormControl.Label>
                     <ActionMenu>
                         <ActionMenu.Button>{Key}</ActionMenu.Button>
@@ -54,7 +54,7 @@ export function AdminCreateTrack() {
                         </ActionMenu.Overlay>
                     </ActionMenu>
                 </FormControl>
-                <FormControl required={true} sx={style}>
+                <FormControl required={true} sx={formControlStyle}>
                     <FormControl.Label>Scale</FormControl.Label>
                     <ActionMenu>
                         <ActionMenu.Button>{Scale}</ActionMenu.Button>
@@ -64,7 +64,7 @@ export function AdminCreateTrack() {
                         </ActionMenu.Overlay>
                     </ActionMenu>
                 </FormControl>
-                <FormControl required={true} sx={style}>
+                <FormControl required={true} sx={formControlStyle}>
                     <FormControl.Label>Lead Type</FormControl.Label>
                     <FormControl.Caption>This is defining what lead instrument the song is going to start with. You can change the instrument mid-game with [keytar] and [guitar] text events.</FormControl.Caption>
                     <ActionMenu>
@@ -75,33 +75,33 @@ export function AdminCreateTrack() {
                         </ActionMenu.Overlay>
                     </ActionMenu>
                 </FormControl>
-                <FormControl required={true} sx={style}>
+                <FormControl required={true} sx={formControlStyle}>
                     <FormControl.Label>Tempo</FormControl.Label>
                     <TextInput type="number" />
                 </FormControl>
-                <FormControl required={true} sx={style}>
+                <FormControl required={true} sx={formControlStyle}>
                     <FormControl.Label>MIDI File</FormControl.Label>
                     <TextInput type="file" />
                     <FormControl.Caption>You can use the #tools-and-resources channel to find useful resources on how to create MIDIs.</FormControl.Caption>
                 </FormControl>
-                <FormControl required={true} sx={style}>
+                <FormControl required={true} sx={formControlStyle}>
                     <FormControl.Label>Cover Image</FormControl.Label>
                     <TextInput type="file" />
                     <FormControl.Caption>Must be a 1:1 ratio. Max: 2048x2048, min: 512x512</FormControl.Caption>
                 </FormControl>
-                <FormControl required={true} sx={style}>
+                <FormControl required={true} sx={formControlStyle}>
                     <FormControl.Label>Lead Difficulty</FormControl.Label>
                     <TextInput type="number" />
                 </FormControl>
-                <FormControl required={true} sx={style}>
+                <FormControl required={true} sx={formControlStyle}>
                     <FormControl.Label>Drums Difficulty</FormControl.Label>
                     <TextInput type="number" />
                 </FormControl>
-                <FormControl required={true} sx={style}>
+                <FormControl required={true} sx={formControlStyle}>
                     <FormControl.Label>Vocals Difficulty</FormControl.Label>
                     <TextInput type="number" />
                 </FormControl>
-                <FormControl required={true} sx={style}>
+                <FormControl required={true} sx={formControlStyle}>
                     <FormControl.Label>Bass Difficulty</FormControl.Label>
                     <TextInput type="number" />
                 </FormControl>
@@ -128,7 +128,7 @@ export function AdminCreateTrack() {
                     const VocalsDifficulty = (formRef.current[13] as HTMLInputElement).valueAsNumber;
                     const BassDifficulty = (formRef.current[14] as HTMLInputElement).valueAsNumber;
 
-                    const SongData = await axios.post("/admin/api/create/song", {
+                    const SongData = await axios.post("/api/admin/create/song", {
                         Name,
                         ArtistName,
                         Album,
@@ -149,7 +149,7 @@ export function AdminCreateTrack() {
                     if (SongData.status !== 200)
                         return;
 
-                    const MidiRes = await axios.post("/admin/api/upload/midi", {
+                    const MidiRes = await axios.post("/api/admin/upload/midi", {
                         Data: Buffer.from(
                             await Midi.arrayBuffer()
                         ).toString("hex"),
@@ -157,7 +157,7 @@ export function AdminCreateTrack() {
                     });
                     toast(MidiRes.data, { type: MidiRes.status === 200 ? "success" : "error" });
 
-                    const CoverRes = await axios.post("/admin/api/upload/cover", { Data: Buffer.from(await Cover.arrayBuffer()).toString("hex"), TargetSong: SongData.data.ID });
+                    const CoverRes = await axios.post("/api/admin/upload/cover", { Data: Buffer.from(await Cover.arrayBuffer()).toString("hex"), TargetSong: SongData.data.ID });
                     toast(CoverRes.data, { type: CoverRes.status === 200 ? "success" : "error" });
                 }}>Create</Button>
 

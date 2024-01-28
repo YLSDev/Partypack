@@ -1,13 +1,19 @@
 {
-  "name": "snippets",
+  "name": "partypack",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "create": "mkdir ./Out && npm run build && mv ./dist ./Out/dist && cd Server && tsc && cd .. && cp ./Server/.env ./Out && cp ./Server/package.json ./Out && cp ./Server/package-lock.json ./Out",
-    "publish": "npm run create && ssh shady \"cd /home/PartypackProd; rm -rf ./Out\" && scp -r ./Out shady:/home/PartypackProd && ssh shady \"cd /home/PartypackProd/Out; npm i; pm2 restart PartypackProd --update-env\" && rm -rf ./Out",
+    "build:prod": "vite build",
+    "build:stage": "vite build --mode staging",
+    
+    "create:prod": "mkdir ./Out && npm run build:prod && mv ./dist ./Out/dist && cd Server && tsc && cd .. && cp ./Server/.env.prod ./Out/.env && cp ./Server/package.json ./Out && cp ./Server/package-lock.json ./Out",
+    "publish:prod": "npm run create:prod && ssh partypack \"cd /home/PartypackProd; rm -rf ./Out\" && scp -r ./Out partypack:/home/PartypackProd && ssh partypack \"cd /home/PartypackProd/Out && npm i && pm2 restart PartypackProd --update-env\" && rm -rf ./Out",
+
+    "create:stage": "mkdir ./Out && npm run build:stage && mv ./dist ./Out/dist && cd Server && tsc && cd .. && cp ./Server/.env.staging ./Out/.env && cp ./Server/package.json ./Out && cp ./Server/package-lock.json ./Out",
+    "publish:stage": "npm run create:stage && ssh partypack \"cd /home/PartypackStage; rm -rf ./Out\" && scp -r ./Out partypack:/home/PartypackStage && ssh partypack \"cd /home/PartypackStage/Out && npm i && pm2 restart PartypackStage --update-env\" && rm -rf ./Out",
+    
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "dev:all": "start cmd.exe /k \"cd ./Server && npm run dev:watch\" && vite"

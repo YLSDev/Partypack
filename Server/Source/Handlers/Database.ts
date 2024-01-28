@@ -1,13 +1,22 @@
 import { DataSource } from "typeorm";
 import { ENVIRONMENT } from "../Modules/Constants";
-import { join } from "path";
+import { Song } from "../Schemas/Song";
+import { ForcedCategory } from "../Schemas/ForcedCategory";
+import { User } from "../Schemas/User";
+import { Rating } from "../Schemas/Rating";
 
 export const DBSource = new DataSource({
     type: "better-sqlite3",
     database: `Partypack${ENVIRONMENT !== "prod" ? `-${ENVIRONMENT}` : ""}.db`,
     synchronize: true,
     logging: false,
-    entities: [join(__dirname, "..", "Schemas") + "\\*{.js,.ts}"],
+    entities: [
+        Song,
+        ForcedCategory,
+        User,
+        Rating
+        /*join(__dirname, "..", "Schemas") + "\\*{.js,.ts}"*/ // does not work in prod
+    ],
     subscribers: [],
     migrations: [],
     enableWAL: true

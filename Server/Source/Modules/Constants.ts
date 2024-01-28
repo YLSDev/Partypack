@@ -10,9 +10,9 @@ export const ENDPOINT_AUTHENTICATION_ENABLED = !!process.env.ENDPOINT_AUTHENTICA
 export const _ENDPOINT_AUTHENTICATION_ENV = process.env.ENDPOINT_AUTHENTICATION;
 export const ENDPOINT_AUTH_HEADER = _ENDPOINT_AUTHENTICATION_ENV?.split(":")[0]; // Header name for endpoint auth.
 export const ENDPOINT_AUTH_VALUE = _ENDPOINT_AUTHENTICATION_ENV?.split(":")[1]; // Value of the header for endpoint auth.
-export const USE_HTTPS = !IS_DEBUG; //false; //Boolean(process.env.USE_HTTPS); // todo: fix this shit
+export const USE_HTTPS = process.env.USE_HTTPS?.toLowerCase() === "true";
 export const DASHBOARD_ROOT = `http${USE_HTTPS ? "s" : ""}://${DASHBOARD_URL}`; // A shortcut so that you don't need to type this out every time you wanna display the dashboard URL.
-export const FULL_SERVER_ROOT = `http${USE_HTTPS ? "s" : ""}://${SERVER_URL}:${PORT}`; // A shortcut so that you don't need to type this out every time you wanna display the server URL.
+export const FULL_SERVER_ROOT = `http${USE_HTTPS ? "s" : ""}://${SERVER_URL}${!USE_HTTPS ? `:${PORT}` : ""}`; // A shortcut so that you don't need to type this out every time you wanna display the server URL.
 export const COOKIE_SIGN_KEY = process.env.COOKIE_SIGN_KEY; // Secret that will be used to sign cookies.
 export const ADMIN_KEY = process.env.ADMIN_KEY; // Secret that will be required to sign into the Admin Dashboard.
 export const JWT_KEY = process.env.JWT_KEY; // Secret that will be required to sign JSON Web Tokens (JWTs).

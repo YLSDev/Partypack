@@ -20,16 +20,19 @@ ValidateBody(j.object({
     ToOverride: j.string().pattern(/^sid_placeholder_(\d){1,3}$/i).required()
 })),
 async (req, res) => {
-    if (req.user?.Library.findIndex(x => x.SongID.toLowerCase() === req.body.SongID.toLowerCase() || x.Overriding.toLowerCase() === req.body.ToOverride.toLowerCase()) !== -1)
+    if (req.user!.Library!.length >= 15)
+        return res.status(400).json({ errorMessage: "You have too many active songs. Please deactivate some to free up space." });
+
+    if (req.user!.Library.findIndex(x => x.SongID.toLowerCase() === req.body.SongID.toLowerCase() || x.Overriding.toLowerCase() === req.body.ToOverride.toLowerCase()) !== -1)
         return res.status(400).json({ errorMessage: "This song is already activated." });
 
     if (!await Song.exists({ where: { ID: req.body.SongID } }))
         return res.status(404).json({ errorMessage: "Provided song doesn't exist." });
 
-    req.user?.Library.push({ SongID: req.body.SongID.toLowerCase(), Overriding: req.body.ToOverride.toLowerCase() });
-    req.user?.save();
+    req.user!.Library.push({ SongID: req.body.SongID.toLowerCase(), Overriding: req.body.ToOverride.toLowerCase() });
+    req.user!.save();
 
-    res.json(req.user?.Library);
+    res.json(req.user!.Library);
 })
 
 App.post("/me/deactivate",

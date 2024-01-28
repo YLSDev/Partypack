@@ -15,7 +15,7 @@ App.get("/", async (req, res) => {
     }
 
     res.json([
-        ...ForcedCategories.map(x => { return { ...x, Custom: true }; }),
+        ...ForcedCategories.map(x => { return { ...x, Custom: true, Songs: x.Songs.map(y => y.Package()) }; }),
         New
     ].sort((a, b) => a.Priority - b.Priority))
 });
