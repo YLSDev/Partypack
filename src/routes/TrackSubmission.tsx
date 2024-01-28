@@ -19,7 +19,7 @@ export function TrackSubmission() {
                 <Text></Text>
             </Box>*/}
             <Heading>Create a New Draft</Heading>
-            <Text>Drafts are private versions of Tracks, only available to you. If you want to publish that track, click the "Submit for Review" button on the management page.</Text>
+            <Text>Drafts are private versions of Tracks, only available to you. If you want to publish that track, click the "Publish" button on the management page.</Text>
             <form method="GET" action="" ref={formRef}>
                 <FormControl required={true} sx={formControlStyle}>
                     <FormControl.Label>Song Name</FormControl.Label>
@@ -95,7 +95,7 @@ export function TrackSubmission() {
                     <FormControl.Caption>This will play in the background of your song. Make sure it was exported from REAPER.</FormControl.Caption>
                 </FormControl>
                 <FormControl required={true} sx={formControlStyle}>
-                    <FormControl.Label>Cover Image (.jpg, .jpeg, .webp, .png)</FormControl.Label>
+                    <FormControl.Label>Cover Image (.png)</FormControl.Label>
                     <TextInput type="file" />
                     <FormControl.Caption>Must be a 1:1 ratio. Max: 2048x2048, min: 512x512</FormControl.Caption>
                 </FormControl>
@@ -165,16 +165,14 @@ export function TrackSubmission() {
                         return;
 
                     const MidiRes = await axios.post("/api/drafts/upload/midi", { Data: Buffer.from(await Midi.arrayBuffer()).toString("hex"), TargetSong: SongData.data.ID });
-                    toast(MidiRes.status === 200 ? "Uploaded MIDI chart successfully." : MidiRes.data.errorMessage, { type: MidiRes.status === 200 ? "success" : "error" });
+                    toast(MidiRes.status === 200 ? "Uploaded MIDI chart successfully." : MidiRes.data, { type: MidiRes.status === 200 ? "success" : "error" });
 
                     const AudioRes = await axios.post("/api/drafts/upload/audio", { Data: Buffer.from(await Music.arrayBuffer()).toString("hex"), TargetSong: SongData.data.ID });
-                    toast(AudioRes.status === 200 ? "Uploaded audio for processing successfully." : AudioRes.data.errorMessage, { type: AudioRes.status === 200 ? "success" : "error" });
+                    toast(AudioRes.status === 200 ? "Uploaded audio for processing successfully." : AudioRes.data, { type: AudioRes.status === 200 ? "success" : "error" });
 
                     const CoverRes = await axios.post("/api/drafts/upload/cover", { Data: Buffer.from(await Cover.arrayBuffer()).toString("hex"), TargetSong: SongData.data.ID });
-                    toast(MidiRes.status === 200 ? "Uploaded cover image successfully." : MidiRes.data.errorMessage, { type: CoverRes.status === 200 ? "success" : "error" });
+                    toast(CoverRes.status === 200 ? "Uploaded cover image successfully." : CoverRes.data, { type: CoverRes.status === 200 ? "success" : "error" });
                 }}>Create</Button>
-
-                
             </form>
         </>
     )

@@ -4,7 +4,6 @@ import { PageHeader } from "@primer/react/drafts";
 import { useContext, useEffect, useState } from "react";
 import { SiteContext } from "../utils/State";
 import { useCookies } from "react-cookie";
-import { useNavigate } from "react-router-dom";
 import { Song } from "../components/Song";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -18,7 +17,6 @@ export function Profile() {
 	const [draftsSongs, setDraftsSongs] = useState<unknown[]>([]);
 	const [availableOverrides, setAvailableOverrides] = useState<{ Name: string, Template: string }[]>([]);
 	const [overriding, setOverriding] = useState<unknown>({});
-	const navigate = useNavigate();
 
 	useEffect(() => {
 		(async () => {
@@ -131,18 +129,27 @@ export function Profile() {
 						<Box className="songCategory">
 							{
 								draftsSongs.length >= 1 ?
-								draftsSongs.map(x => {
+								draftsSongs.map((x, i) => {
 										return <Song data={x}>
 											<Button sx={{ width: "100%", marginBottom: 1 }} variant="primary" onClick={() => { setIsActivateDialogOpen(true); setOverriding(x) }} disabled={librarySongs.findIndex(y => y.ID === x.ID) !== -1}>Add to Active</Button>
-											<Button sx={{ width: "100%", marginBottom: 1 }}>Publish</Button>
+											<Button sx={{ width: "100%", marginBottom: 1 }} onClick={async () => {
+												const Res = await axios.post("/api/drafts/submit", { TargetSong: x.ID });
+												if (Res.status === 200) {
+													x.DraftAwaitingReview = true;
+													draftsSongs[i] = x;
+													setDraftsSongs([...draftsSongs]);
+												}
+												else
+													toast(Res.data, { type: "error" });
+											}}>Publish</Button>
 											<Button sx={{ width: "100%" }} variant="danger" onClick={async () => {
-												const Res = await axios.post("/api/drafts/delete", { SongID: x.ID });
+												const Res = await axios.post("/api/drafts/delete", { TargetSong: x.ID });
 												if (Res.status === 200) {
 													draftsSongs.splice(draftsSongs.findIndex(y => y.ID === x.ID), 1);
 													setDraftsSongs([...draftsSongs]);
 												}
 												else
-													toast(Res.data.errorMessage, { type: "error" })
+													toast(Res.data, { type: "error" });
 											}}>Unsubscribe</Button>
 										</Song>;
 									})

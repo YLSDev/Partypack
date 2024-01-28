@@ -9,7 +9,11 @@ export function Song({ data, children }: { data: any, children?: JSX.Element[] |
                 <Text sx={{ display: "block", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{data.ArtistName}</Text>
                 <Text sx={{ display: "block", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}><b>{data.Name}</b></Text>
                 {
-                    data.IsDraft ? <Label variant="danger">Draft - not published</Label> : <></>
+                    data.IsDraft ?
+                        data.DraftAwaitingReview ?
+                            <Label variant="attention">Draft - awaiting review</Label> :
+                            <Label variant="danger">Draft - not published</Label> :
+                        <></>
                 }
                 {
                     children ? <Divider /> : <></>

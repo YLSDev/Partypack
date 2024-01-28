@@ -3,6 +3,7 @@ import { RequireAuthentication, ValidateBody } from "../Modules/Middleware";
 import { Song } from "../Schemas/Song";
 import { OriginalSparks } from "../Modules/FNUtil";
 import j from "joi";
+import { UserPermissions } from "../Schemas/User";
 
 const App = Router();
 
@@ -27,8 +28,12 @@ async (req, res) => {
     if (req.user!.Library.findIndex(x => x.SongID.toLowerCase() === req.body.SongID.toLowerCase() || x.Overriding.toLowerCase() === req.body.ToOverride.toLowerCase()) !== -1)
         return res.status(400).json({ errorMessage: "This song is already activated." });
 
-    if (!await Song.exists({ where: { ID: req.body.SongID } }))
+    const SongData = await Song.findOne({ where: { ID: req.body.SongID }, relations: { Author: true } });
+    if (!SongData)
         return res.status(404).json({ errorMessage: "Provided song doesn't exist." });
+
+    if (SongData.IsDraft && (req.user!.PermissionLevel < UserPermissions.Administrator && SongData.Author.ID !== req.user!.ID))
+        return res.status(403).json({ errorMessage: "You cannot subscribe to this track, because it's a draft." });
 
     req.user!.Library.push({ SongID: req.body.SongID.toLowerCase(), Overriding: req.body.ToOverride.toLowerCase() });
     req.user!.save();
@@ -65,7 +70,7 @@ async (req, res) => {
     if (!SongData)
         return res.status(404).json({ errorMessage: "Provided song doesn't exist." });
 
-    if (SongData.IsDraft && SongData.Author.ID !== req.user.ID)
+    if (SongData.IsDraft && (req.user.PermissionLevel < UserPermissions.Administrator && SongData.Author.ID !== req.user.ID))
         return res.status(403).json({ errorMessage: "You cannot subscribe to this track, because it's a draft." });
 
     req.user?.BookmarkedSongs.push(SongData);
@@ -93,12 +98,12 @@ async (req, res) => {
 App.get("/song/data/:InternalID",
 RequireAuthentication(),
 async (req, res) => {
-    const SongData = await Song.findOne({ where: { ID: req.params.InternalID }, relations: { Author: true } });
+    const SongData = await Song.findOne({ where: { ID: req.body.SongID }, relations: { Author: true } });
     if (!SongData)
         return res.status(404).json({ errorMessage: "Provided song doesn't exist." });
 
-    if (SongData.IsDraft && SongData.Author.ID !== req.user!.ID)
-        return res.status(403).json({ errorMessage: "You cannot use this track, because it's a draft." });
+    if (SongData.IsDraft && (req.user!.PermissionLevel < UserPermissions.Administrator && SongData.Author.ID !== req.user!.ID))
+        return res.status(403).json({ errorMessage: "You cannot subscribe to this track, because it's a draft." });
 
     res.json(SongData.Package());
 })

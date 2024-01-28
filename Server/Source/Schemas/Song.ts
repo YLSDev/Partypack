@@ -68,6 +68,9 @@ export class Song extends BaseEntity {
     @Column({ default: false })
     DraftAwaitingReview: boolean;
 
+    @Column({ nullable: true })
+    DraftReviewSubmittedAt?: Date;
+
     @Column()
     CreationDate: Date;
 

@@ -53,8 +53,12 @@ App.post("/upload/midi",
         if ((await fromBuffer(Decoded))?.ext !== "mid")
             return res.status(400).send("Uploaded MIDI file is not a valid MIDI.");
 
-        if (!await Song.exists({ where: { ID: req.body.TargetSong } }))
+        const SongData = await Song.findOne({ where: { ID: req.body.TargetSong }, relations: { Author: true } })
+        if (!SongData)
             return res.status(404).send("The song you're trying to upload a MIDI for does not exist.");
+
+        if (req.user!.PermissionLevel! < UserPermissions.Administrator && SongData.Author.ID !== req.user!.ID)
+            return res.status(403).send("You don't have permission to upload to this song.");
 
         writeFileSync(`./Saved/Songs/${req.body.TargetSong}/Data.mid`, Decoded);
         res.send(`${FULL_SERVER_ROOT}/song/download/${req.body.TargetSong}/midi.mid`);
@@ -112,8 +116,12 @@ App.post("/upload/audio",
         if (!["mp3", "m4a", "ogg", "wav"].includes(ext))
             return res.status(404).send("Invalid audio file. (supported: mp3, m4a, ogg, wav)");
 
-        if (!await Song.exists({ where: { ID: req.body.TargetSong } }))
+        const SongData = await Song.findOne({ where: { ID: req.body.TargetSong }, relations: { Author: true } })
+        if (!SongData)
             return res.status(404).send("The song you're trying to upload audio for does not exist.");
+
+        if (req.user!.PermissionLevel! < UserPermissions.Administrator && SongData.Author.ID !== req.user!.ID)
+            return res.status(403).send("You don't have permission to upload to this song.");
 
         await writeFileSync(`./Saved/Songs/${req.body.TargetSong}/Audio.${ext}`, Decoded);
         ffmpeg()
@@ -142,9 +150,28 @@ App.post("/upload/audio",
 
 App.post("/submit",
     RequireAuthentication(),
-    ValidateBody(j.object({})),
+    ValidateBody(j.object({
+        TargetSong: j.string().uuid().required()
+    })),
     async (req, res) => {
+        const SongData = await Song.findOne({ where: { ID: req.body.TargetSong }, relations: { Author: true } })
+        if (!SongData)
+            return res.status(404).send("The song you're trying to submit for review does not exist.");
 
+        if (SongData.Author.ID !== req.user!.ID)
+            return res.status(403).send("You don't have permission to submit this song for approval.");
+
+        if (!SongData.IsDraft)
+            return res.status(400).send("This song has already been approved and published.");
+
+        if (SongData.DraftAwaitingReview)
+            return res.status(400).send("You already submitted this song for review.");
+
+        SongData.DraftReviewSubmittedAt = new Date();
+        SongData.DraftAwaitingReview = true;
+        await SongData.save();
+
+        return res.send("Song has been submitted for approval by admins.");
     });
 
 export default {
