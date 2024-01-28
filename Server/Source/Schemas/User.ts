@@ -23,6 +23,9 @@ export class User extends BaseEntity {
     @OneToMany(() => Rating, R => R.Author)
     Ratings: Rating[];
 
+    @OneToMany(() => Song, R => R.Author)
+    CreatedTracks: Song[];
+
     @ManyToMany(() => Song, { eager: true })
     @JoinTable()
     BookmarkedSongs: Song[];

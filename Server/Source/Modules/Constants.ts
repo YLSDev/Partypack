@@ -17,5 +17,6 @@ export const COOKIE_SIGN_KEY = process.env.COOKIE_SIGN_KEY; // Secret that will 
 export const ADMIN_KEY = process.env.ADMIN_KEY; // Secret that will be required to sign into the Admin Dashboard.
 export const JWT_KEY = process.env.JWT_KEY; // Secret that will be required to sign JSON Web Tokens (JWTs).
 export const BOT_TOKEN = process.env.BOT_TOKEN; // Used for Discord-related stuff.
+export const DISCORD_SERVER_ID = process.env.DISCORD_SERVER_ID; // Server ID to check roles for permissions in.
 export const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID; // Client ID for authentication and checking what role you have on the Discord server.
 export const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET; // Client secret for authentication and checking what role you have on the Discord server.

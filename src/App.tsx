@@ -9,6 +9,7 @@ import { CookiesProvider } from "react-cookie";
 import { Home } from "./routes/Home";
 import { Download } from "./routes/Download";
 import { Tracks } from "./routes/Tracks";
+import { TrackSubmission } from "./routes/TrackSubmission";
 import { Profile } from "./routes/Profile";
 import { NotFound } from "./routes/404";
 import { AdminHome } from "./routes/AdminHome";
@@ -41,6 +42,7 @@ function App() {
 									<Route path="/" element={<Home />} />
 									<Route path="/download" element={<Download />} />
 									<Route path="/tracks" element={<Tracks />} />
+									<Route path="/submissions" element={<TrackSubmission />} />
 									<Route path="/profile" element={<Profile />} />
 									<Route path="*" element={<NotFound />} />
 

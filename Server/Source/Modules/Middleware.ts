@@ -45,3 +45,14 @@ export function ValidateBody(Schema: j.Schema) {
         }
     }
 }
+
+export function ValidateQuery(Schema: j.Schema) {
+    return async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            req.query = await Schema.validateAsync(req.query);
+            next();
+        } catch (err) {
+            res.status(400).json({ errorMessage: "Query validation failed.", details: err })
+        }
+    }
+}

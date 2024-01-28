@@ -1,13 +1,18 @@
-import { BaseEntity, BeforeInsert, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, BeforeInsert, BeforeRemove, Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { FULL_SERVER_ROOT } from "../Modules/Constants";
 import { Rating } from "./Rating";
-import { existsSync, mkdirSync } from "fs";
+import { existsSync, mkdirSync, rmSync } from "fs";
 import { v4 } from "uuid";
+import { User } from "./User";
+import { join } from "path";
 
 @Entity()
 export class Song extends BaseEntity {
     @PrimaryGeneratedColumn("uuid")
     ID: string;
+
+    @ManyToOne(() => User, U => U.CreatedTracks)
+    Author: User;
 
     @Column()
     Name: string;
@@ -58,6 +63,9 @@ export class Song extends BaseEntity {
     VocalsDifficulty: number;
 
     @Column()
+    IsDraft: boolean;
+
+    @Column()
     CreationDate: Date;
 
     @Column({ nullable: true })
@@ -70,10 +78,16 @@ export class Song extends BaseEntity {
     Setup() {
         this.ID = v4();
         this.Directory = `./Saved/Songs/${this.ID}`;
-        if (!existsSync(this.Directory))
-            mkdirSync(this.Directory);
+        if (!existsSync(join(this.Directory, "Chunks")))
+            mkdirSync(join(this.Directory, "Chunks"), { recursive: true });
 
         this.CreationDate = new Date();
+    }
+
+    @BeforeRemove()
+    Delete() {
+        if (existsSync(this.Directory) && this.Directory.endsWith(this.ID))
+            rmSync(this.Directory, { recursive: true, force: true }); // lets hope this does not cause steam launcher for linux 2.0
     }
 
     public Package() {

@@ -6,6 +6,7 @@ import { Song } from "../Schemas/Song";
 import { RequireAuthentication, ValidateBody } from "../Modules/Middleware";
 import { writeFileSync } from "fs";
 import { ForcedCategory } from "../Schemas/ForcedCategory";
+import { fromBuffer } from "file-type";
 import ffmpeg from "fluent-ffmpeg";
 import exif from "exif-reader";
 import j from "joi";
@@ -52,7 +53,7 @@ ValidateBody(j.object({
     VocalsDifficulty: j.number().required().min(0).max(7)
 })),
 async (req, res) => {
-    res.json(await Song.create(req.body).save())
+    res.json(await Song.create({ ...req.body, Draft: false, Author: req.user! }).save())
 });
 
 App.post("/upload/midi",
@@ -63,7 +64,7 @@ ValidateBody(j.object({
 async (req, res) => {
     const Decoded = Buffer.from(req.body.Data, "hex");
 
-    if (!Decoded.toString().startsWith("MThd"))
+    if ((await fromBuffer(Decoded))?.ext !== "mid")
         return res.status(400).send("Uploaded MIDI file is not a valid MIDI.");
 
     if (!await Song.exists({ where: { ID: req.body.TargetSong } }))
@@ -80,9 +81,19 @@ ValidateBody(j.object({
 })),
 async (req, res) => {
     const Decoded = Buffer.from(req.body.Data, "hex");
+    const ext = (await fromBuffer(Decoded))!.ext;
+
+    if (!["mp3", "m4a", "ogg", "wav"].includes(ext))
+        return res.status(404).send("Invalid audio file. (supported: mp3, m4a, ogg, wav)");
 
     if (!await Song.exists({ where: { ID: req.body.TargetSong } }))
         return res.status(404).send("The song you're trying to upload audio for does not exist.");
+
+    // TODO: implement checks for this
+    writeFileSync(`./Saved/Songs/${req.body.TargetSong}/Audio.${ext}`, Decoded);
+
+    ffmpeg()
+        .input("")
 })
 
 App.post("/upload/cover",
@@ -92,12 +103,16 @@ ValidateBody(j.object({
 })),
 async (req, res) => {
     const Decoded = Buffer.from(req.body.Data, "hex");
+    const ext = (await fromBuffer(Decoded))!.ext;
+
+    if (ext !== "png")
+        return res.status(404).send("Invalid image file. (supported: png)");
 
     if (!await Song.exists({ where: { ID: req.body.TargetSong } }))
         return res.status(404).send("The song you're trying to upload a cover for does not exist.");
 
-    try { // todo: fix
-        /*const ImageMetadata = exif(Decoded);
+    try {
+        const ImageMetadata = exif(Decoded);
         if (!ImageMetadata.Image?.ImageWidth || !ImageMetadata.Image?.ImageLength)
             throw new Error("Invalid image file.");
 
@@ -105,7 +120,7 @@ async (req, res) => {
             return res.status(400).send("Image must have a 1:1 ratio.");
 
         if (ImageMetadata.Image.ImageWidth < 512 || ImageMetadata.Image.ImageWidth > 2048)
-            return res.status(400).send("Image cannot be smaller than 512 pixels and larger than 2048 pixels.");*/
+            return res.status(400).send("Image cannot be smaller than 512 pixels and larger than 2048 pixels.");
     } catch (err) {
         console.error(err)
         return res.status(400).send("Invalid image file.");

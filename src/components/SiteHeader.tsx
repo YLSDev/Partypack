@@ -33,9 +33,8 @@ export function SiteHeader() {
                 <img src={Favicon} style={{ width: 32, height: "auto", paddingRight: 5 }} />
                 <b>Partypack</b>
             </Header.Item>
-            <Header.Item full sx={{ cursor: "pointer" }} onClick={() => navigate("/rotation")}>Daily Rotation</Header.Item>
-            <Header.Item full sx={{ cursor: "pointer" }} onClick={() => navigate("/creators")}>Top Creators</Header.Item>
             <Header.Item full sx={{ cursor: "pointer" }} onClick={() => navigate("/tracks")}>Tracks</Header.Item>
+            <Header.Item full sx={{ cursor: "pointer" }} onClick={() => navigate("/submissions")}>Submissions</Header.Item>
             <Header.Item full sx={{ cursor: "pointer" }} onClick={() => navigate("/tutorials")}>Tutorials</Header.Item>
             <Header.Item full sx={{ cursor: "pointer" }} onClick={() => navigate("/faq")}>FAQ</Header.Item>
             <Header.Item full sx={{ cursor: "pointer" }} onClick={() => window.open("https://discord.gg/KaxknAbqDS")}>Discord</Header.Item>

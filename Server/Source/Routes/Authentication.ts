@@ -1,11 +1,15 @@
 import axios from "axios";
 import jwt from "jsonwebtoken";
 import qs from "querystring";
+import j from "joi";
 import { Response, Router } from "express";
-import { DASHBOARD_ROOT, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, FULL_SERVER_ROOT, JWT_KEY } from "../Modules/Constants";
+import { BOT_TOKEN, DASHBOARD_ROOT, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_SERVER_ID, FULL_SERVER_ROOT, JWT_KEY } from "../Modules/Constants";
 import { User, UserPermissions } from "../Schemas/User";
+import { ValidateQuery } from "../Modules/Middleware";
+import { Err } from "../Modules/Logger";
 
 const App = Router();
+//let DiscordServerRoleMetadata;
 
 // ? hacky, if you want, make it less hacky
 async function QuickRevokeToken(res: Response, Token: string) {
@@ -13,15 +17,25 @@ async function QuickRevokeToken(res: Response, Token: string) {
     return res;
 }
 
+async function ReloadRoleData() {
+    const DRMt = await axios.get(`https://discord.com/api/guilds/${DISCORD_SERVER_ID}/roles`, { headers: { Authorization: `Bot ${BOT_TOKEN}` } });
+
+    Err(`Discord roles request failed to execute. Did you set up the .env correctly?`)
+    if (DRMt.status !== 200)
+        process.exit(-1);
+
+    //DiscordServerRoleMetadata = DRMt.data as { id: string, name: string, permissions: number }[];
+}
+
+//ReloadRoleData();
+
 App.get("/discord/url", (_ ,res) => res.send(`https://discord.com/api/oauth2/authorize?client_id=${qs.escape(DISCORD_CLIENT_ID!)}&response_type=code&redirect_uri=${qs.escape(`${FULL_SERVER_ROOT}/api/discord`)}&scope=identify`))
 
-App.get("/discord", async (req, res) => {
-    if (!req.query.code)
-        return res.status(400).send("Please authorize with Discord first.");
-
-    if (!/^(\w|\d)+$/gi.test(req.query.code as string))
-        return res.status(400).send("Malformed code.");
-
+App.get("/discord",
+ValidateQuery(j.object({
+    code: j.string().pattern(/^(\w|\d)+$/i).required()
+})),
+async (req, res) => {
     const Discord = await axios.post(`https://discord.com/api/oauth2/token`, qs.stringify({ grant_type: "authorization_code", code: req.query.code as string, redirect_uri: `${FULL_SERVER_ROOT}/api/discord` }), { auth: { username: DISCORD_CLIENT_ID!, password: DISCORD_CLIENT_SECRET! } });
     
     if (Discord.status !== 200)
@@ -36,11 +50,15 @@ App.get("/discord", async (req, res) => {
 
     await QuickRevokeToken(res, Discord.data.access_token);
 
+    // TODO: add discord role thingy
+    let UserPermissionLevel = UserPermissions.User;
+
     let DBUser = await User.findOne({ where: { ID: UserData.data.id } });
     if (!DBUser)
         DBUser = await User.create({
             ID: UserData.data.id,
-            Library: []
+            Library: [],
+            PermissionLevel: UserPermissionLevel
         }).save();
 
     const JWT = jwt.sign({ ID: UserData.data.id }, JWT_KEY!, { algorithm: "HS256" });
