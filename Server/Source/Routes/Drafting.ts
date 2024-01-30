@@ -31,7 +31,7 @@ App.post("/create",
         VocalsDifficulty: j.number().required().min(0).max(6)
     })),
     async (req, res) => {
-        if (req.user!.CreatedTracks.length > Number(MAX_AMOUNT_OF_DRAFTS_AT_ONCE))
+        if (req.user!.CreatedTracks.length >= Number(MAX_AMOUNT_OF_DRAFTS_AT_ONCE))
             return res.status(400).send("You ran out of free draft spots. Please delete some first.");
 
         const SongData = await Song.create({
