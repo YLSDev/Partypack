@@ -179,7 +179,7 @@ export function Profile() {
 											}}>Unsubscribe</Button>
 										</Song>;
 									})
-									: <Text>You have no bookmarked songs.</Text>
+									: <Text>You didn't subscribe to any songs.</Text>
 							}
 						</Box>
 
