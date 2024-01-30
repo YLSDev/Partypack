@@ -4,6 +4,8 @@ import { ToastContainer } from "react-toastify";
 import { BaseStyles, ThemeProvider, theme } from "@primer/react";
 import { SiteHeader } from "./components/SiteHeader";
 import { VerifyAdmin } from "./components/VerifyAdmin";
+import { VerifyRole } from "./components/VerifyRole";
+import { UserPermissions } from "./utils/Extensions";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { CookiesProvider } from "react-cookie";
 import { Home } from "./routes/Home";
@@ -14,7 +16,7 @@ import { Profile } from "./routes/Profile";
 import { NotFound } from "./routes/404";
 import { AdminHome } from "./routes/AdminHome";
 import { AdminTrackList } from "./routes/AdminTrackList";
-import { AdminCreateTrack } from "./routes/AdminCreateTrack";
+import { AdminSubmissions } from "./routes/AdminSubmissions";
 import { AdminFeaturedTab } from "./routes/AdminFeaturedTab";
 import { SiteContext, SiteState } from "./utils/State";
 import merge from "deepmerge";
@@ -46,10 +48,12 @@ function App() {
 									<Route path="/profile" element={<Profile />} />
 									<Route path="*" element={<NotFound />} />
 
+									{/* Staff routes */}
+									<Route path="/mod/submissions" element={<VerifyRole role={UserPermissions.TrackVerifier}><AdminSubmissions /></VerifyRole>} />
+
 									{/* Admin routes */}
 									<Route path="/admin" element={<VerifyAdmin><AdminHome /></VerifyAdmin>} />
 									<Route path="/admin/tracks" element={<VerifyAdmin><AdminTrackList /></VerifyAdmin>} />
-									<Route path="/admin/tracks/create" element={<VerifyAdmin><AdminCreateTrack /></VerifyAdmin>} />
 									<Route path="/admin/featured" element={<VerifyAdmin><AdminFeaturedTab /></VerifyAdmin>} />
 								</Routes>
 							</div>

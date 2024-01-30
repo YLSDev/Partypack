@@ -1,17 +1,28 @@
 import { Router } from "express";
 import { RequireAuthentication, ValidateBody } from "../Modules/Middleware";
-import { Song } from "../Schemas/Song";
+import { Song, SongStatus } from "../Schemas/Song";
 import { OriginalSparks } from "../Modules/FNUtil";
 import j from "joi";
 import { UserPermissions } from "../Schemas/User";
 
 const App = Router();
 
-App.get("/me", RequireAuthentication({ BookmarkedSongs: true, CreatedTracks: true }), (req, res) => {
+App.get("/me", RequireAuthentication({ BookmarkedSongs: true, CreatedTracks: true }), async (req, res) => {
+    const ProcessingTracks = req.user!.CreatedTracks.filter(x => x.Status === SongStatus.PROCESSING);
+    if (ProcessingTracks.length > 0)
+        for (const Track of ProcessingTracks) {
+            console.log(Track.HasAudio, Track.HasMidi, Track.HasCover)
+            if (!Track.HasAudio || !Track.HasMidi || !Track.HasCover)
+                continue;
+
+            Track.Status = SongStatus.DEFAULT;
+            await Track.save();
+        }
+
     res.json({
-        Bookmarks: req.user?.BookmarkedSongs.map(x => x.Package()),
-        Created: req.user?.CreatedTracks.map(x => x.Package()),
-        Library: req.user?.Library
+        Bookmarks: req.user!.BookmarkedSongs.map(x => x.Package()),
+        Created: req.user!.CreatedTracks.map(x => x.Package(true)),
+        Library: req.user!.Library
     })
 })
 
@@ -23,17 +34,17 @@ ValidateBody(j.object({
 })),
 async (req, res) => {
     if (req.user!.Library!.length >= 15)
-        return res.status(400).json({ errorMessage: "You have too many active songs. Please deactivate some to free up space." });
+        return res.status(400).send("You have too many active songs. Please deactivate some to free up space.");
 
     if (req.user!.Library.findIndex(x => x.SongID.toLowerCase() === req.body.SongID.toLowerCase() || x.Overriding.toLowerCase() === req.body.ToOverride.toLowerCase()) !== -1)
-        return res.status(400).json({ errorMessage: "This song is already activated." });
+        return res.status(400).send("This song is already activated.");
 
     const SongData = await Song.findOne({ where: { ID: req.body.SongID }, relations: { Author: true } });
     if (!SongData)
-        return res.status(404).json({ errorMessage: "Provided song doesn't exist." });
+        return res.status(404).send("Provided song doesn't exist.");
 
-    if (SongData.IsDraft && (req.user!.PermissionLevel < UserPermissions.Administrator && SongData.Author.ID !== req.user!.ID))
-        return res.status(403).json({ errorMessage: "You cannot subscribe to this track, because it's a draft." });
+    if (SongData.IsDraft && (req.user!.PermissionLevel < UserPermissions.TrackVerifier && SongData.Author.ID !== req.user!.ID))
+        return res.status(403).send("You cannot activate this track, because it's a draft.");
 
     req.user!.Library.push({ SongID: req.body.SongID.toLowerCase(), Overriding: req.body.ToOverride.toLowerCase() });
     req.user!.save();
@@ -49,7 +60,7 @@ ValidateBody(j.object({
 async (req, res) => {
     const idx = req.user!.Library.findIndex(x => x.SongID.toLowerCase() === req.body.SongID.toLowerCase());
     if (idx === -1)
-        return res.status(400).json({ errorMessage: "This song is not activated." });
+        return res.status(400).send("This song is not activated.");
 
     req.user?.Library.splice(idx, 1);
     req.user?.save();
@@ -64,14 +75,14 @@ ValidateBody(j.object({
 })),
 async (req, res) => {
     if (req.user?.BookmarkedSongs.findIndex(x => x.ID.toLowerCase() === req.body.SongID.toLowerCase()) !== -1)
-        return res.status(400).json({ errorMessage: "You're already subscribed to this song." });
+        return res.status(400).send("You're already subscribed to this song.");
 
     const SongData = await Song.findOne({ where: { ID: req.body.SongID }, relations: { Author: true } });
     if (!SongData)
-        return res.status(404).json({ errorMessage: "Provided song doesn't exist." });
+        return res.status(404).send("Provided song doesn't exist.");
 
-    if (SongData.IsDraft && (req.user.PermissionLevel < UserPermissions.Administrator && SongData.Author.ID !== req.user.ID))
-        return res.status(403).json({ errorMessage: "You cannot subscribe to this track, because it's a draft." });
+    if (SongData.IsDraft && (req.user.PermissionLevel < UserPermissions.TrackVerifier && SongData.Author.ID !== req.user.ID))
+        return res.status(403).send("You cannot subscribe to this track, because it's a draft.");
 
     req.user?.BookmarkedSongs.push(SongData);
     req.user?.save();
@@ -87,7 +98,7 @@ ValidateBody(j.object({
 async (req, res) => {
     const idx = req.user!.BookmarkedSongs.findIndex(x => x.ID.toLowerCase() === req.body.SongID.toLowerCase());
     if (idx === -1)
-        return res.status(400).json({ errorMessage: "You aren't subscribed to this song." });
+        return res.status(400).send("You aren't subscribed to this song.");
 
     req.user?.BookmarkedSongs.splice(idx, 1);
     req.user?.save();
@@ -98,12 +109,12 @@ async (req, res) => {
 App.get("/song/data/:InternalID",
 RequireAuthentication(),
 async (req, res) => {
-    const SongData = await Song.findOne({ where: { ID: req.body.SongID }, relations: { Author: true } });
+    const SongData = await Song.findOne({ where: { ID: req.params.InternalID }, relations: { Author: true } });
     if (!SongData)
-        return res.status(404).json({ errorMessage: "Provided song doesn't exist." });
+        return res.status(404).send("Provided song doesn't exist.");
 
-    if (SongData.IsDraft && (req.user!.PermissionLevel < UserPermissions.Administrator && SongData.Author.ID !== req.user!.ID))
-        return res.status(403).json({ errorMessage: "You cannot subscribe to this track, because it's a draft." });
+    if (SongData.IsDraft && (req.user!.PermissionLevel < UserPermissions.TrackVerifier && SongData.Author.ID !== req.user!.ID))
+        return res.status(403).send("You cannot use this track, because it's a draft.");
 
     res.json(SongData.Package());
 })

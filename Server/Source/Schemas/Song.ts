@@ -6,6 +6,16 @@ import { v4 } from "uuid";
 import { User } from "./User";
 import { join } from "path";
 
+export enum SongStatus {
+    BROKEN = -100,
+    DEFAULT = 0,
+    PROCESSING = 100,
+    PUBLIC = 200,
+    AWAITING_REVIEW = 300,
+    ACCEPTED = 400,
+    DENIED = 500,
+}
+
 @Entity()
 export class Song extends BaseEntity {
     @PrimaryGeneratedColumn("uuid")
@@ -66,10 +76,19 @@ export class Song extends BaseEntity {
     IsDraft: boolean;
 
     @Column({ default: false })
-    DraftAwaitingReview: boolean;
+    HasMidi: boolean;
+
+    @Column({ default: false })
+    HasCover: boolean;
+
+    @Column({ default: false })
+    HasAudio: boolean;
 
     @Column({ nullable: true })
     DraftReviewSubmittedAt?: Date;
+
+    @Column({ default: SongStatus.DEFAULT })
+    Status: SongStatus;
 
     @Column()
     CreationDate: Date;
@@ -96,9 +115,10 @@ export class Song extends BaseEntity {
             rmSync(this.Directory, { recursive: true, force: true }); // lets hope this does not cause steam launcher for linux 2.0
     }
 
-    public Package() {
+    public Package(IncludeStatus: boolean = false) {
         return {
             ...this,
+            Status: IncludeStatus ? this.Status : SongStatus.DEFAULT,
             Directory: undefined, // we should NOT reveal that
             Midi: this.Midi ?? `${FULL_SERVER_ROOT}/song/download/${this.ID}/midi.mid`,
             Cover: this.Cover ?? `${FULL_SERVER_ROOT}/song/download/${this.ID}/cover.png`

@@ -16,7 +16,7 @@ declare global {
 export function RequireAuthentication(Relations?: object) {
     return async (req: Request, res: Response, next: NextFunction) => {
         if (!req.header("X-Partypack-Token") && !req.cookies["Token"] && !req.header("Authorization"))
-            return res.status(401).json({ errorMessage: "This endpoint requires authorization." });
+            return res.status(401).send("This endpoint requires authorization.");
 
         let JWT: JwtPayload;
         try {
@@ -28,7 +28,7 @@ export function RequireAuthentication(Relations?: object) {
 
         const UserData = await User.findOne({ where: { ID: JWT.ID }, relations: Relations });
         if (!UserData)
-            return res.status(401).json({ errorMessage: "Invalid Partypack token provided. User does not exist in database. Please contact an instance admin." });
+            return res.status(401).send("Invalid Partypack token provided. User does not exist in database. Please contact an instance admin.");
 
         req.user = UserData;
         next();
@@ -41,7 +41,7 @@ export function ValidateBody(Schema: j.Schema) {
             req.body = await Schema.validateAsync(req.body);
             next();
         } catch (err) {
-            res.status(400).json({ errorMessage: "Body validation failed.", details: err })
+            res.status(400).json(err)
         }
     }
 }
@@ -52,7 +52,7 @@ export function ValidateQuery(Schema: j.Schema) {
             req.query = await Schema.validateAsync(req.query);
             next();
         } catch (err) {
-            res.status(400).json({ errorMessage: "Query validation failed.", details: err })
+            res.status(400).json(err)
         }
     }
 }

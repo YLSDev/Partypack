@@ -143,7 +143,7 @@ export function TrackSubmission() {
                     const VocalsDifficulty = (formRef.current[14] as HTMLInputElement).valueAsNumber;
                     const BassDifficulty = (formRef.current[15] as HTMLInputElement).valueAsNumber;
 
-                    const SongData = await axios.post("/api/drafts/create", {
+                    const B = {
                         Name,
                         ArtistName,
                         Album,
@@ -157,7 +157,12 @@ export function TrackSubmission() {
                         DrumsDifficulty,
                         VocalsDifficulty,
                         BassDifficulty
-                    });
+                    };
+
+                    if (Object.values(B).includes(NaN) || Object.values(B).includes(null) || Object.values(B).includes(undefined))
+                        return toast("One or more required fields missing.", { type: "error" });
+
+                    const SongData = await axios.post("/api/drafts/create", B);
 
                     toast(SongData.data, { type: SongData.status === 200 ? "success" : "error" });
 

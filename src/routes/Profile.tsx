@@ -1,14 +1,18 @@
-import { ActionList, ActionMenu, Avatar, Box, Button, Dialog, Heading, Text } from "@primer/react"
+import { ActionList, ActionMenu, Avatar, Box, Button, Dialog, FormControl, Heading, Text, TextInput } from "@primer/react"
 import { Divider } from "@primer/react/lib-esm/ActionList/Divider";
 import { PageHeader } from "@primer/react/drafts";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { SiteContext } from "../utils/State";
 import { useCookies } from "react-cookie";
 import { Song } from "../components/Song";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { SongStatus } from "../utils/Extensions";
+
+const formControlStyle = { paddingTop: 3 };
 
 export function Profile() {
+	const formRef = useRef<HTMLFormElement>(null);
 	const { state, setState } = useContext(SiteContext);
 	const [, , removeCookie] = useCookies();
 	const [isActivateDialogOpen, setIsActivateDialogOpen] = useState<boolean>(false);
@@ -17,6 +21,8 @@ export function Profile() {
 	const [draftsSongs, setDraftsSongs] = useState<unknown[]>([]);
 	const [availableOverrides, setAvailableOverrides] = useState<{ Name: string, Template: string }[]>([]);
 	const [overriding, setOverriding] = useState<unknown>({});
+	const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState<boolean>(false);
+	const [updating, setUpdating] = useState<unknown>({});
 
 	useEffect(() => {
 		(async () => {
@@ -26,7 +32,17 @@ export function Profile() {
 			if (Data.status !== 200 || Overrides.status !== 200)
 				return toast("An error has occured while getting your library!", { type: "error" });
 
-			const LibSongs = (await Promise.all(Data.data.Library.map((x: { SongID: string; }) => axios.get(`/api/library/song/data/${x.SongID}`)))).map(x => { return { ...x.data, Override: Data.data.Library.find((y: { SongID: string; }) => y.SongID === x.data.ID).Overriding } });
+			const LibSongs = (await Promise.all(
+				Data.data.Library.map(
+					(x: { SongID: string; }) =>
+						axios.get(`/api/library/song/data/${x.SongID}`))
+				)).map(
+					x => {
+						return {
+							...x.data,
+							Override: Data.data.Library.find((y: { SongID: string; }) => y.SongID === x.data.ID).Overriding }
+						});
+			
 			setLibrarySongs(LibSongs);
 			setBookmarkedSongs(Data.data.Bookmarks);
 			setDraftsSongs(Data.data.Created);
@@ -52,8 +68,46 @@ export function Profile() {
 								</PageHeader.Actions>
 							</PageHeader.TitleArea>
 						</PageHeader>
+
 						<Divider />
-						<Heading sx={{ marginBottom: 2 }}>Active Songs</Heading>
+
+						<Dialog isOpen={isUpdateDialogOpen} onDismiss={() => setIsUpdateDialogOpen(false)} aria-labelledby="header">
+							<Dialog.Header id="header">Update song</Dialog.Header>
+							<Box p={3}>
+								<Text>
+									{
+										updating.Status === SongStatus.DENIED ?
+											"Your song has been denied from being published by staff. In order to re-apply for publishing, please update your song. Your song could've been denied for many reasons, like overcharting, bad chart, spam or troll entry. To find out what the actual reason is, please contact an administrator. Keep in mind that rolling back to previous versions is not possible." :
+											"Updating your song while it is published will unlist it and queue it for review. Keep in mind that rolling back to previous versions is not possible."
+									}
+								</Text>
+								<form method="GET" action="" ref={formRef}>
+									<FormControl required={true} sx={formControlStyle}>
+										<FormControl.Label>MIDI File (.mid)</FormControl.Label>
+										<TextInput sx={{ width: "100%" }} type="file" />
+										<FormControl.Caption>You can use the #tools-and-resources channel to find useful resources on how to create MIDIs.</FormControl.Caption>
+									</FormControl>
+									<FormControl required={true} sx={formControlStyle}>
+										<FormControl.Label>Audio File (.m4a, .mp3, .wav)</FormControl.Label>
+										<TextInput sx={{ width: "100%" }} type="file" />
+										<FormControl.Caption>This will play in the background of your song. Make sure it was exported from REAPER.</FormControl.Caption>
+									</FormControl>
+									<FormControl required={true} sx={formControlStyle}>
+										<FormControl.Label>Cover Image (.png)</FormControl.Label>
+										<TextInput sx={{ width: "100%" }} type="file" />
+										<FormControl.Caption>Must be a 1:1 ratio. Max: 2048x2048, min: 512x512</FormControl.Caption>
+									</FormControl>
+									<Button type="submit" sx={{ marginTop: 3, width: "100%" }} onClick={e => {
+										e.preventDefault();
+
+										const Midi = (formRef.current[0] as HTMLInputElement).files![0];
+										const Music = (formRef.current[1] as HTMLInputElement).files![0];
+										const Cover = (formRef.current[2] as HTMLInputElement).files![0];
+									}}>{ updating.Status === SongStatus.PUBLIC ? "Unlist and Update" : "Update" }</Button>
+								</form>
+							</Box>
+						</Dialog>
+
 						<Dialog isOpen={isActivateDialogOpen} onDismiss={() => setIsActivateDialogOpen(false)} aria-labelledby="header">
 							<Dialog.Header id="header">Activate song</Dialog.Header>
 							<Box p={3}>
@@ -84,6 +138,8 @@ export function Profile() {
 								</ActionMenu>
 							</Box>
 						</Dialog>
+
+						<Heading sx={{ marginBottom: 2 }}>Active Songs</Heading>
 						<Box className="songCategory">
 							{
 								librarySongs.length >= 1 ?
@@ -104,6 +160,7 @@ export function Profile() {
 									: <Text>You have no activated songs.</Text>
 							}
 						</Box>
+
 						<Heading sx={{ marginTop: 2, marginBottom: 2 }}>My Subscriptions</Heading>
 						<Box className="songCategory">
 							{
@@ -125,32 +182,34 @@ export function Profile() {
 									: <Text>You have no bookmarked songs.</Text>
 							}
 						</Box>
+
 						<Heading sx={{ marginTop: 2, marginBottom: 2 }}>My Drafts & Published Songs</Heading>
 						<Box className="songCategory">
 							{
 								draftsSongs.length >= 1 ?
 								draftsSongs.map((x, i) => {
 										return <Song data={x}>
-											<Button sx={{ width: "100%", marginBottom: 1 }} variant="primary" onClick={() => { setIsActivateDialogOpen(true); setOverriding(x) }} disabled={librarySongs.findIndex(y => y.ID === x.ID) !== -1}>Add to Active</Button>
-											<Button sx={{ width: "100%", marginBottom: 1 }} onClick={async () => {
+											<Button sx={{ width: "100%", marginBottom: 1 }} variant="primary" onClick={() => { setIsActivateDialogOpen(true); setOverriding(x) }} disabled={x.Status === SongStatus.BROKEN || x.Status === SongStatus.DENIED || x.Status === SongStatus.PROCESSING || librarySongs.findIndex(y => y.ID === x.ID) !== -1}>Add to Active</Button>
+											<Button sx={{ width: "100%", marginBottom: 1 }} variant="primary" onClick={() => { setIsUpdateDialogOpen(true); setUpdating(x) }} disabled={x.Status !== SongStatus.BROKEN && x.Status !== SongStatus.DEFAULT && x.Status !== SongStatus.DENIED && x.Status !== SongStatus.PUBLIC}>Update</Button>
+											<Button disabled={x.Status !== SongStatus.DEFAULT && x.Status !== SongStatus.ACCEPTED} sx={{ width: "100%", marginBottom: 1 }} onClick={async () => {
 												const Res = await axios.post("/api/drafts/submit", { TargetSong: x.ID });
 												if (Res.status === 200) {
-													x.DraftAwaitingReview = true;
+													x.Status = x.Status === SongStatus.AWAITING_REVIEW ? SongStatus.PUBLIC : SongStatus.AWAITING_REVIEW;
 													draftsSongs[i] = x;
 													setDraftsSongs([...draftsSongs]);
 												}
-												else
-													toast(Res.data, { type: "error" });
-											}}>Publish</Button>
-											<Button sx={{ width: "100%" }} variant="danger" onClick={async () => {
+												
+												toast(Res.data, { type: Res.status === 200 ? "success" : "error" });
+											}}>{x.Status === SongStatus.DEFAULT ? "Submit for Review" : "Publish"}</Button>
+											<Button disabled={!state.UserDetails.IsAdmin && x.Status !== SongStatus.DEFAULT && x.Status !== SongStatus.DENIED && x.Status !== SongStatus.BROKEN} sx={{ width: "100%" }} variant="danger" onClick={async () => {
 												const Res = await axios.post("/api/drafts/delete", { TargetSong: x.ID });
 												if (Res.status === 200) {
 													draftsSongs.splice(draftsSongs.findIndex(y => y.ID === x.ID), 1);
 													setDraftsSongs([...draftsSongs]);
 												}
-												else
-													toast(Res.data, { type: "error" });
-											}}>Unsubscribe</Button>
+												
+												toast(Res.data, { type: Res.status === 200 ? "success" : "error" });
+											}}>Delete draft</Button>
 										</Song>;
 									})
 									: <Text>You have no bookmarked songs.</Text>

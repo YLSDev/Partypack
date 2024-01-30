@@ -62,7 +62,7 @@ async (req, res) => {
         }).save();
 
     const JWT = jwt.sign({ ID: UserData.data.id }, JWT_KEY!, { algorithm: "HS256" });
-    const UserDetails = Buffer.from(JSON.stringify({ ID: UserData.data.id, Username: UserData.data.username, GlobalName: UserData.data.global_name, Avatar: `https://cdn.discordapp.com/avatars/${UserData.data.id}/${UserData.data.avatar}.webp`, IsAdmin: DBUser.PermissionLevel >= UserPermissions.Administrator })).toString("hex")
+    const UserDetails = Buffer.from(JSON.stringify({ ID: UserData.data.id, Username: UserData.data.username, GlobalName: UserData.data.global_name, Avatar: `https://cdn.discordapp.com/avatars/${UserData.data.id}/${UserData.data.avatar}.webp`, IsAdmin: DBUser.PermissionLevel >= UserPermissions.Administrator, Role: DBUser.PermissionLevel })).toString("hex")
     if (req.query.state) {
         try {
             const Decoded = JSON.parse(Buffer.from(decodeURI(req.query.state as string), "base64").toString("utf-8"));

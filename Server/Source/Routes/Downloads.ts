@@ -13,12 +13,10 @@ async (req, res) => {
     //const Song = AvailableFestivalSongs.find(x => x.UUID === req.params.SongUUID);
     const SongData = await Song.findOne({ where: { ID: req.params.InternalID }, relations: { Author: true } });
     if (!SongData)
-        return res.status(404).json({ errorMessage: "Song not found." });
-
-    console.log(SongData);
+        return res.status(404).send("Song not found.");
     
     if (SongData.IsDraft && SongData.Author.ID !== req.user!.ID)
-        return res.status(403).json({ errorMessage: "You cannot use this track, because it's a draft." });
+        return res.status(403).send("You cannot use this track, because it's a draft.");
 
     const BaseURL = `${FULL_SERVER_ROOT}/song/download/${SongData.ID}/`;
     switch (req.params.File.toLowerCase()) {
@@ -77,7 +75,7 @@ App.get("/:InternalID", async (req, res, next) => {
         return next(); // trust me bro
 
     if (SongData.IsDraft && SongData.Author.ID !== req.user!.ID)
-        return res.status(403).json({ errorMessage: "You cannot use this track, because it's a draft." });
+        return res.status(403).send("You cannot use this track, because it's a draft.");
 
     const BaseURL = `${FULL_SERVER_ROOT}/song/download/${SongData.ID}/`;
     res.set("content-type", "application/json");

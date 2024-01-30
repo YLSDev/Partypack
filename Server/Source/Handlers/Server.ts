@@ -54,12 +54,12 @@ async function Initialize() {
         App.use("/assets", e.static("dist/assets"));
     }
 
-    App.use("/api/*", (_, res) => res.status(404).json({ errorMessage: "Not Found" }));
+    App.use("/api/*", (_, res) => res.status(404).send("Not Found"));
     App.use("*", (_, res) => res.sendFile(path.join(process.cwd(), "dist", "index.html")));
 
     App.use((err, req, res, _) => {
         console.error(err);
-        res.status(500).json({ errorMessage: IS_DEBUG ? err.message : "Oops! Something broke on our end. Sorry!" });
+        res.status(500).json(IS_DEBUG ? err.message : "Oops! Something broke on our end. Sorry!");
     })
     
     App.listen(PORT, () => Msg(`${magenta(PROJECT_NAME)} now up on port ${magenta(PORT)} ${(IS_DEBUG ? red("(debug environment)") : "")}`));

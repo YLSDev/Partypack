@@ -5,6 +5,7 @@ import { Rating } from "./Rating";
 export enum UserPermissions { // increments of 100 in case we want to add permissions inbetween without fucking up all instances
     User = 100,
     VerifiedUser = 200,
+    TrackVerifier = 250,
     Moderator = 300,
     Administrator = 400
 }

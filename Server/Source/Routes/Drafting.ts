@@ -1,20 +1,20 @@
 import j from "joi";
-import exif from "exif-reader";
 import ffmpeg from "fluent-ffmpeg";
+import sizeOf from "image-size";
 import { Router } from "express";
 import { RequireAuthentication, ValidateBody } from "../Modules/Middleware";
-import { Song } from "../Schemas/Song";
+import { Song, SongStatus } from "../Schemas/Song";
 import { Debug } from "../Modules/Logger";
 import { magenta } from "colorette";
 import { fromBuffer } from "file-type";
 import { rmSync, writeFileSync } from "fs";
-import { FULL_SERVER_ROOT } from "../Modules/Constants";
+import { FULL_SERVER_ROOT, MAX_AMOUNT_OF_DRAFTS_AT_ONCE } from "../Modules/Constants";
 import { UserPermissions } from "../Schemas/User";
 
 const App = Router();
 
 App.post("/create",
-    RequireAuthentication(),
+    RequireAuthentication({ CreatedTracks: true }),
     ValidateBody(j.object({
         Name: j.string().required().min(3).max(64),
         Year: j.number().required().min(1).max(2999),
@@ -25,15 +25,19 @@ App.post("/create",
         Album: j.string().required(),
         GuitarStarterType: j.string().valid("Keytar", "Guitar").required(),
         Tempo: j.number().min(20).max(1250).required(),
-        BassDifficulty: j.number().required().min(0).max(7),
-        GuitarDifficulty: j.number().required().min(0).max(7),
-        DrumsDifficulty: j.number().required().min(0).max(7),
-        VocalsDifficulty: j.number().required().min(0).max(7)
+        BassDifficulty: j.number().required().min(0).max(6),
+        GuitarDifficulty: j.number().required().min(0).max(6),
+        DrumsDifficulty: j.number().required().min(0).max(6),
+        VocalsDifficulty: j.number().required().min(0).max(6)
     })),
     async (req, res) => {
+        if (req.user!.CreatedTracks.length > Number(MAX_AMOUNT_OF_DRAFTS_AT_ONCE))
+            return res.status(400).send("You ran out of free draft spots. Please delete some first.");
+
         const SongData = await Song.create({
             ...req.body,
             IsDraft: true,
+            Status: SongStatus.PROCESSING,
             Author: req.user!
         }).save();
 
@@ -62,6 +66,10 @@ App.post("/upload/midi",
 
         writeFileSync(`./Saved/Songs/${req.body.TargetSong}/Data.mid`, Decoded);
         res.send(`${FULL_SERVER_ROOT}/song/download/${req.body.TargetSong}/midi.mid`);
+
+        await SongData.reload();
+        SongData.HasMidi = true;
+        await SongData.save();
     });
 
 App.post("/upload/cover",
@@ -85,6 +93,15 @@ App.post("/upload/cover",
             return res.status(403).send("You don't have permission to upload to this song.");
 
         try {
+            const ImageSize = sizeOf(Decoded);
+            if (!ImageSize.height || !ImageSize.width)
+                throw new Error("Unknown image size error");
+
+            if (ImageSize.height !== ImageSize.width)
+                return res.status(400).send("Image must have a 1:1 ratio.");
+
+            if (ImageSize.width < 512 || ImageSize.width > 2048)
+                return res.status(400).send("Image cannot be smaller than 512x512 pixels and larger than 2048x2048 pixels.");
             /*const ImageMetadata = exif(Decoded);
             if (!ImageMetadata.Image?.ImageWidth || !ImageMetadata.Image?.ImageLength)
                 throw new Error("Invalid image file.");
@@ -98,6 +115,10 @@ App.post("/upload/cover",
             console.error(err)
             return res.status(400).send("Invalid image file.");
         }
+
+        await SongData.reload();
+        SongData.HasCover = true;
+        await SongData.save();
 
         writeFileSync(`./Saved/Songs/${req.body.TargetSong}/Cover.png`, Decoded);
         res.send(`${FULL_SERVER_ROOT}/song/download/${req.body.TargetSong}/cover.png`);
@@ -123,6 +144,16 @@ App.post("/upload/audio",
         if (req.user!.PermissionLevel! < UserPermissions.Administrator && SongData.Author.ID !== req.user!.ID)
             return res.status(403).send("You don't have permission to upload to this song.");
 
+        if (SongData.HasAudio) {
+            if (SongData.Status !== SongStatus.BROKEN && SongData.Status !== SongStatus.DEFAULT && SongData.Status !== SongStatus.DENIED && SongData.Status !== SongStatus.PUBLIC)
+                return res.status(400).send("You cannot update this song at this moment.");
+
+            rmSync(`./Saved/Songs/${req.body.TargetSong}/Chunks`, { recursive: true });
+            SongData.HasAudio = false;
+            SongData.Status = SongStatus.PROCESSING;
+            await SongData.save();
+        }
+
         await writeFileSync(`./Saved/Songs/${req.body.TargetSong}/Audio.${ext}`, Decoded);
         ffmpeg()
             .input(`./Saved/Songs/${req.body.TargetSong}/Audio.${ext}`)
@@ -133,19 +164,53 @@ App.post("/upload/audio",
             ])
             .output(`./Saved/Songs/${req.body.TargetSong}/Chunks/Manifest.mpd`)
             .on("start", cl => Debug(`ffmpeg running with ${magenta(cl)}`))
-            .on("end", () => {
+            .on("end", async () => {
                 Debug("Ffmpeg finished running");
                 rmSync(`./Saved/Songs/${req.body.TargetSong}/Audio.${ext}`);
+
+                await SongData.reload();
+                SongData.HasAudio = true;
+                await SongData.save();
             })
-            .on("error", (e, stdout, stderr) => {
+            .on("error", async (e, stdout, stderr) => {
                 console.error(e);
                 console.log(stdout);
                 console.error(stderr);
                 rmSync(`./Saved/Songs/${req.body.TargetSong}/Audio.${ext}`);
+
+                await SongData.reload();
+                SongData.Status = SongStatus.BROKEN;
+                await SongData.save();
             })
             .run();
 
         res.send("ffmpeg now running on song.");
+    });
+
+App.post("/delete",
+    RequireAuthentication(),
+    ValidateBody(j.object({
+        TargetSong: j.string().uuid().required()
+    })),
+    async (req, res) => {
+        const SongData = await Song.findOne({ where: { ID: req.body.TargetSong }, relations: { Author: true } })
+        if (!SongData)
+            return res.status(404).send("The draft you're trying to delete does not exist.");
+
+        const IsAdmin = req.user!.PermissionLevel! >= UserPermissions.Administrator;
+        if (!IsAdmin) {
+            if (SongData.Author.ID !== req.user!.ID)
+                return res.status(403).send("You don't have permission to remove this draft.");
+
+            if (!SongData.IsDraft)
+                return res.status(400).send("This draft has already been published. You need to contact an admin to delete published drafts.");
+
+            if (SongData.Status !== SongStatus.DEFAULT && SongData.Status !== SongStatus.DENIED && SongData.Status !== SongStatus.BROKEN)
+                return res.status(400).send("You cannot delete this draft at this moment.");
+        }
+
+        await SongData.remove();
+        res.send("The draft has been deleted.");
     });
 
 App.post("/submit",
@@ -164,11 +229,19 @@ App.post("/submit",
         if (!SongData.IsDraft)
             return res.status(400).send("This song has already been approved and published.");
 
-        if (SongData.DraftAwaitingReview)
-            return res.status(400).send("You already submitted this song for review.");
+        if (SongData.Status === SongStatus.ACCEPTED) {
+            SongData.Status = SongStatus.PUBLIC;
+            SongData.IsDraft = false;
+            await SongData.save();
 
+            return res.send("Song has been published successfully.");
+        }
+
+        if (SongData.Status !== SongStatus.DEFAULT)
+            return res.status(400).send("You cannot submit this song for review at this time.");
+
+        SongData.Status = req.user!.PermissionLevel! >= UserPermissions.VerifiedUser ? SongStatus.ACCEPTED : SongStatus.AWAITING_REVIEW;
         SongData.DraftReviewSubmittedAt = new Date();
-        SongData.DraftAwaitingReview = true;
         await SongData.save();
 
         return res.send("Song has been submitted for approval by admins.");

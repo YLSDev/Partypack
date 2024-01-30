@@ -9,7 +9,7 @@ const App = Router();
 App.get("/:InternalID", async (req, res) => {
     const SongData = await Song.findOne({ where: { ID: req.params.InternalID }, relations: { Ratings: true } });
     if (!SongData)
-        return res.status(404).json({ errorMessage: "The song you're trying to get the rating for has not been found." });
+        return res.status(404).send("The song you're trying to get the rating for has not been found.");
 
     let Average = 0;
     if (SongData.Ratings.length > 0) {
@@ -31,7 +31,7 @@ ValidateBody(j.object({
 async (req, res) => {
     const SongData = await Song.findOne({ where: { ID: req.params.InternalID } });
     if (!SongData)
-        return res.status(404).json({ errorMessage: "The song you're trying to get the rating for has not been found." });
+        return res.status(404).send("The song you're trying to get the rating for has not been found.");
 
     const Existing = req.user?.Ratings.find(x => SongData.ID === x.Rated.ID)
     if (Existing)

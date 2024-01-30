@@ -40,7 +40,7 @@ App.get("/content/api/pages/fortnite-game/:Section", RequireAuthentication(), as
 
     const CachedSection = Object.values(FullFortnitePages!).find(x => x._title === req.params.Section);
     if (!CachedSection)
-        return res.status(404).json({ errorMessage: "funny section not found haha kill me" });
+        return res.status(404).send("funny section not found haha kill me");
 
     const ContentFromServer = await axios.get(`https://fortnitecontent-website-prod07.ol.epicgames.com/content/api/pages/fortnite-game/${CachedSection._title}`);
     if (ContentFromServer.status !== 200)
