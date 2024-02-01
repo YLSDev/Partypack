@@ -7,7 +7,7 @@ import { Song, SongStatus } from "../Schemas/Song";
 import { Debug } from "../Modules/Logger";
 import { magenta } from "colorette";
 import { fromBuffer } from "file-type";
-import { rmSync, writeFileSync } from "fs";
+import { rmSync, writeFileSync, renameSync, readFileSync } from "fs";
 import { FULL_SERVER_ROOT, MAX_AMOUNT_OF_DRAFTS_AT_ONCE } from "../Modules/Constants";
 import { UserPermissions } from "../Schemas/User";
 
@@ -167,6 +167,10 @@ App.post("/upload/audio",
             .on("end", async () => {
                 Debug("Ffmpeg finished running");
                 rmSync(`./Saved/Songs/${req.body.TargetSong}/Audio.${ext}`);
+
+                renameSync(`./Saved/Songs/${req.body.TargetSong}/Chunks/Manifest.mpd`, `./Saved/Songs/${req.body.TargetSong}/Manifest.mpd`);
+                // i love creating thread-safe code that always works! (never gonna error trust me)
+                writeFileSync(`./Saved/Songs/${req.body.TargetSong}/Manifest.mpd`, readFileSync(`./Saved/Songs/${req.body.TargetSong}/Manifest.mpd`).toString().replace(/<ProgramInformation>[\w\d\r\n\t]*<\/ProgramInformation>/i, "<BaseURL>{BASEURL}</BaseURL>"));
 
                 await SongData.reload();
                 SongData.HasAudio = true;

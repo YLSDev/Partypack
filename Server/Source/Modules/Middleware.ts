@@ -23,7 +23,7 @@ export function RequireAuthentication(Relations?: object) {
             JWT = verify(req.header("X-Partypack-Token") ?? req.cookies["Token"] ?? req.header("Authorization"), JWT_KEY!) as JwtPayload;
         } catch (err) {
             console.error(err);
-            return res.status(403).json({ errorMessage: `Invalid Partypack token provided.${IS_DEBUG ? ` (${err})` : ""}` });
+            return res.status(403).send(`Invalid Partypack token provided.${IS_DEBUG ? ` (${err})` : ""}`);
         }
 
         const UserData = await User.findOne({ where: { ID: JWT.ID }, relations: Relations });

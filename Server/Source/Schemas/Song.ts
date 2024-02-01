@@ -119,6 +119,7 @@ export class Song extends BaseEntity {
         return {
             ...this,
             Status: IncludeStatus ? this.Status : SongStatus.DEFAULT,
+            Author: this.Author ? this.Author.ID : undefined,
             Directory: undefined, // we should NOT reveal that
             Midi: this.Midi ?? `${FULL_SERVER_ROOT}/song/download/${this.ID}/midi.mid`,
             Cover: this.Cover ?? `${FULL_SERVER_ROOT}/song/download/${this.ID}/cover.png`

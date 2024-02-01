@@ -33,7 +33,8 @@ App.get("/discord/url", (_ ,res) => res.send(`https://discord.com/api/oauth2/aut
 
 App.get("/discord",
 ValidateQuery(j.object({
-    code: j.string().pattern(/^(\w|\d)+$/i).required()
+    code: j.string().pattern(/^(\w|\d)+$/i).required(),
+    state: j.string()
 })),
 async (req, res) => {
     const Discord = await axios.post(`https://discord.com/api/oauth2/token`, qs.stringify({ grant_type: "authorization_code", code: req.query.code as string, redirect_uri: `${FULL_SERVER_ROOT}/api/discord` }), { auth: { username: DISCORD_CLIENT_ID!, password: DISCORD_CLIENT_SECRET! } });

@@ -114,7 +114,7 @@ async (req, res) => {
         return res.status(404).send("Provided song doesn't exist.");
 
     if (SongData.IsDraft && (req.user!.PermissionLevel < UserPermissions.TrackVerifier && SongData.Author.ID !== req.user!.ID))
-        return res.status(403).send("You cannot use this track, because it's a draft.");
+        return res.status(403).send("You cannot use assets of this track, because it's a draft.");
 
     res.json(SongData.Package());
 })

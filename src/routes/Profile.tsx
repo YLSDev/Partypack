@@ -36,7 +36,7 @@ export function Profile() {
 				Data.data.Library.map(
 					(x: { SongID: string; }) =>
 						axios.get(`/api/library/song/data/${x.SongID}`))
-				)).map(
+				)).filter(x => x.status === 200).map(
 					x => {
 						return {
 							...x.data,
@@ -127,7 +127,7 @@ export function Profile() {
 																{ ...overriding!, Override: x.Template }
 															])
 														else
-															toast(Res.data.errorMessage, { type: "error" })
+															toast(Res.data, { type: "error" })
 													}}>
 															{x.Name}
 														</ActionList.Item>;
@@ -153,7 +153,7 @@ export function Profile() {
 													setLibrarySongs([...librarySongs]);
 												}
 												else
-													toast(Res.data.errorMessage, { type: "error" })
+													toast(Res.data, { type: "error" })
 											}}>Remove from Active</Button>
 										</Song>;
 									})
@@ -175,7 +175,7 @@ export function Profile() {
 													setBookmarkedSongs([...bookmarkedSongs]);
 												}
 												else
-													toast(Res.data.errorMessage, { type: "error" })
+													toast(Res.data, { type: "error" })
 											}}>Unsubscribe</Button>
 										</Song>;
 									})

@@ -4,6 +4,7 @@ import { FULL_SERVER_ROOT } from "../Modules/Constants";
 import { CreateBlurl } from "../Modules/BLURL";
 import { Song } from "../Schemas/Song";
 import { RequireAuthentication } from "../Modules/Middleware";
+import { UserPermissions } from "../Schemas/User";
 
 const App = Router();
 
@@ -15,7 +16,7 @@ async (req, res) => {
     if (!SongData)
         return res.status(404).send("Song not found.");
     
-    if (SongData.IsDraft && SongData.Author.ID !== req.user!.ID)
+    if (SongData.IsDraft && (req.user!.PermissionLevel! < UserPermissions.VerifiedUser && SongData.Author.ID !== req.user!.ID))
         return res.status(403).send("You cannot use this track, because it's a draft.");
 
     const BaseURL = `${FULL_SERVER_ROOT}/song/download/${SongData.ID}/`;
@@ -69,12 +70,14 @@ async (req, res) => {
     res.send(readFileSync(`${SongData.Directory}/Chunks/${req.params.File}`));
 });
 
-App.get("/:InternalID", async (req, res, next) => {
+App.get("/:InternalID",
+RequireAuthentication(),
+async (req, res, next) => {
     const SongData = await Song.findOne({ where: { ID: req.params.InternalID }, relations: { Author: true } });
     if (!SongData)
         return next(); // trust me bro
 
-    if (SongData.IsDraft && SongData.Author.ID !== req.user!.ID)
+    if (SongData.IsDraft && (req.user!.PermissionLevel! < UserPermissions.VerifiedUser && SongData.Author.ID !== req.user!.ID))
         return res.status(403).send("You cannot use this track, because it's a draft.");
 
     const BaseURL = `${FULL_SERVER_ROOT}/song/download/${SongData.ID}/`;

@@ -14,13 +14,13 @@ export function Tracks() {
         (async () => {
             const Discovery = await axios.get("/api/discovery");
             if (Discovery.status !== 200)
-                return toast(Discovery.data.errorMessage, { type: "error" });
+                return toast(Discovery.data, { type: "error" });
 
             setTrackData(Discovery.data);
 
             const Bookmarks = await axios.get("/api/library/me");
             if (Bookmarks.status !== 200)
-                return// toast(Bookmarks.data.errorMessage, { type: "error" });
+                return// toast(Bookmarks.data, { type: "error" });
 
             setBookmarks(Bookmarks.data.Bookmarks);
         })();
@@ -46,7 +46,7 @@ export function Tracks() {
                                                         setBookmarks([...bookmarks]);
                                                     }
                                                     else
-                                                        toast(Res.data.errorMessage, { type: "error" })
+                                                        toast(Res.data, { type: "error" })
                                                 }}>Unsubscribe</Button> :
                                                 <Button sx={{ width: "100%", marginBottom: 1 }} variant="primary" onClick={async () => {
                                                     if (!state.UserDetails)
@@ -64,7 +64,7 @@ export function Tracks() {
                                                         setBookmarks([...bookmarks]);
                                                     }
                                                     else
-                                                        toast(Res.data.errorMessage, { type: "error" })
+                                                        toast(Res.data, { type: "error" })
                                                 }}>Subscribe</Button>
                                         }
                                     </Song>
