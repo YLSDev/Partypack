@@ -2,6 +2,7 @@ import { Box, Label, Text } from "@primer/react";
 import { Divider } from "@primer/react/lib-esm/ActionList/Divider";
 import { SongStatus } from "../utils/Extensions";
 import { LabelColorOptions } from "@primer/react/lib-esm/Label/Label";
+import DefaultCover from "../assets/NoCoverDetected.png";
 
 export function Song({ data, children }: { data: any, children?: JSX.Element[] | JSX.Element | string }) {
     function GetStatusLabel() {
@@ -50,7 +51,7 @@ export function Song({ data, children }: { data: any, children?: JSX.Element[] |
 
     return (
         <Box sx={{ overflow: "hidden", minWidth: 50, maxWidth: 200, padding: 2, borderRadius: 10, border: "solid", borderColor: "border.default" }}>
-            <img src={data.Cover} style={{ width: "100%", borderRadius: 10 }} />
+            <img onError={e => (e.target as HTMLImageElement).src = DefaultCover} src={data.Cover} style={{ width: "100%", borderRadius: 10 }} />
             <center>
                 <Text sx={{ display: "block", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{data.ArtistName}</Text>
                 <Text sx={{ display: "block", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}><b>{data.Name}</b></Text>

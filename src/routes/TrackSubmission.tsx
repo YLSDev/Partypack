@@ -8,6 +8,7 @@ const formControlStyle = { paddingTop: 3 };
 
 export function TrackSubmission() {
     const formRef = useRef<HTMLFormElement>(null);
+    const [waiting, setWaiting] = useState<boolean>(false);
     const [Key, setKey] = useState<string>("Select a key...");
     const [Scale, setScale] = useState<string>("Select a scale...");
     const [GuitarStarterType, setGuitarStarterType] = useState<string>("Select the starter type...");
@@ -119,7 +120,8 @@ export function TrackSubmission() {
                     <TextInput type="number" />
                     <FormControl.Caption>Ranges from 0-6</FormControl.Caption>
                 </FormControl>
-                <Button sx={{ marginTop: 2 }} type="submit" onClick={async e => {
+                <Button sx={{ marginTop: 2 }} type="submit" disabled={waiting} onClick={async e => {
+                    setWaiting(true);
                     e.preventDefault();
                     console.log(formRef);
 
@@ -172,12 +174,15 @@ export function TrackSubmission() {
                     const MidiRes = await axios.post("/api/drafts/upload/midi", { Data: Buffer.from(await Midi.arrayBuffer()).toString("hex"), TargetSong: SongData.data.ID });
                     toast(MidiRes.status === 200 ? "Uploaded MIDI chart successfully." : MidiRes.data, { type: MidiRes.status === 200 ? "success" : "error" });
 
+                    const CoverRes = await axios.post("/api/drafts/upload/cover", { Data: Buffer.from(await Cover.arrayBuffer()).toString("hex"), TargetSong: SongData.data.ID });
+                    toast(CoverRes.status === 200 ? "Uploaded cover image successfully." : CoverRes.data, { type: CoverRes.status === 200 ? "success" : "error" });
+                    
                     const AudioRes = await axios.post("/api/drafts/upload/audio", { Data: Buffer.from(await Music.arrayBuffer()).toString("hex"), TargetSong: SongData.data.ID });
                     toast(AudioRes.status === 200 ? "Uploaded audio for processing successfully." : AudioRes.data, { type: AudioRes.status === 200 ? "success" : "error" });
 
-                    const CoverRes = await axios.post("/api/drafts/upload/cover", { Data: Buffer.from(await Cover.arrayBuffer()).toString("hex"), TargetSong: SongData.data.ID });
-                    toast(CoverRes.status === 200 ? "Uploaded cover image successfully." : CoverRes.data, { type: CoverRes.status === 200 ? "success" : "error" });
-                }}>Create</Button>
+                    setWaiting(false);
+                    toast("Finished processing song. You can now find it in your profile tab.");
+                }}>{waiting ? "Please wait..." : "Create"}</Button>
             </form>
         </>
     )

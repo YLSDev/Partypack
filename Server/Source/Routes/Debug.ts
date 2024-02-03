@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { ENVIRONMENT } from "../Modules/Constants";
 import { RequireAuthentication, ValidateBody } from "../Modules/Middleware";
-import { UserPermissions } from "../Schemas/User";
+import { User, UserPermissions } from "../Schemas/User";
 import j from "joi";
+import { Song } from "../Schemas/Song";
 
 const App = Router();
 
@@ -37,6 +38,12 @@ async (req, res) => {
     await req.user!.save();
     res.json(req.user);
 })
+
+App.get("/raw/song/:SongID",
+async (req, res) => res.json(await Song.findOne({ where: { ID: req.params.SongID } })));
+
+App.get("/raw/user/:UserID",
+async (req, res) => res.json(await User.findOne({ where: { ID: req.params.UserID } })));
 
 export default {
     App,

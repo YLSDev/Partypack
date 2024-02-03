@@ -4,14 +4,26 @@ import { Song, SongStatus } from "../Schemas/Song";
 import { OriginalSparks } from "../Modules/FNUtil";
 import j from "joi";
 import { UserPermissions } from "../Schemas/User";
+import { AsyncFilter } from "../Modules/Extensions";
 
 const App = Router();
 
 App.get("/me", RequireAuthentication({ BookmarkedSongs: true, CreatedTracks: true }), async (req, res) => {
     const ProcessingTracks = req.user!.CreatedTracks.filter(x => x.Status === SongStatus.PROCESSING);
+    // @ts-expect-error not gonna bother making type
+    const NonExistingActiveTracks = await AsyncFilter(req.user!.Library, async x => !(await Song.exists({ where: { ID: x.SongID } })));
+
+    if (NonExistingActiveTracks.length > 0) {
+        for (const Track of NonExistingActiveTracks) {
+            console.log(Track);
+            // @ts-expect-error again not gonna bother making type
+            req.user!.Library.splice(req.user!.Library.findIndex(x => x.SongID === Track.SongID), 1);
+        }
+        await req.user!.save();
+    }
+
     if (ProcessingTracks.length > 0)
         for (const Track of ProcessingTracks) {
-            console.log(Track.HasAudio, Track.HasMidi, Track.HasCover)
             if (!Track.HasAudio || !Track.HasMidi || !Track.HasCover)
                 continue;
 

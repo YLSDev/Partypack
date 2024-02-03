@@ -1,3 +1,5 @@
+import axios from "axios";
+import { Buffer } from "buffer/";
 import { ActionList, ActionMenu, Avatar, Box, Button, Dialog, FormControl, Heading, Text, TextInput } from "@primer/react"
 import { Divider } from "@primer/react/lib-esm/ActionList/Divider";
 import { PageHeader } from "@primer/react/drafts";
@@ -5,7 +7,6 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { SiteContext } from "../utils/State";
 import { useCookies } from "react-cookie";
 import { Song } from "../components/Song";
-import axios from "axios";
 import { toast } from "react-toastify";
 import { SongStatus } from "../utils/Extensions";
 
@@ -82,27 +83,42 @@ export function Profile() {
 									}
 								</Text>
 								<form method="GET" action="" ref={formRef}>
-									<FormControl required={true} sx={formControlStyle}>
+									<FormControl sx={formControlStyle}>
 										<FormControl.Label>MIDI File (.mid)</FormControl.Label>
 										<TextInput sx={{ width: "100%" }} type="file" />
 										<FormControl.Caption>You can use the #tools-and-resources channel to find useful resources on how to create MIDIs.</FormControl.Caption>
 									</FormControl>
-									<FormControl required={true} sx={formControlStyle}>
+									<FormControl sx={formControlStyle}>
 										<FormControl.Label>Audio File (.m4a, .mp3, .wav)</FormControl.Label>
 										<TextInput sx={{ width: "100%" }} type="file" />
 										<FormControl.Caption>This will play in the background of your song. Make sure it was exported from REAPER.</FormControl.Caption>
 									</FormControl>
-									<FormControl required={true} sx={formControlStyle}>
+									<FormControl sx={formControlStyle}>
 										<FormControl.Label>Cover Image (.png)</FormControl.Label>
 										<TextInput sx={{ width: "100%" }} type="file" />
 										<FormControl.Caption>Must be a 1:1 ratio. Max: 2048x2048, min: 512x512</FormControl.Caption>
 									</FormControl>
-									<Button type="submit" sx={{ marginTop: 3, width: "100%" }} onClick={e => {
+									<Button type="submit" sx={{ marginTop: 3, width: "100%" }} onClick={async e => {
 										e.preventDefault();
 
 										const Midi = (formRef.current[0] as HTMLInputElement).files![0];
 										const Music = (formRef.current[1] as HTMLInputElement).files![0];
 										const Cover = (formRef.current[2] as HTMLInputElement).files![0];
+
+										if (Midi) {
+											const MidiRes = await axios.post("/api/drafts/upload/midi", { Data: Buffer.from(await Midi.arrayBuffer()).toString("hex"), TargetSong: updating.ID });
+											toast(MidiRes.status === 200 ? "Uploaded MIDI chart successfully." : MidiRes.data, { type: MidiRes.status === 200 ? "success" : "error" });
+										}
+
+										if (Cover) {
+											const CoverRes = await axios.post("/api/drafts/upload/cover", { Data: Buffer.from(await Cover.arrayBuffer()).toString("hex"), TargetSong: updating.ID });
+											toast(CoverRes.status === 200 ? "Uploaded cover image successfully." : CoverRes.data, { type: CoverRes.status === 200 ? "success" : "error" });
+										}
+
+										if (Music) {
+											const AudioRes = await axios.post("/api/drafts/upload/audio", { Data: Buffer.from(await Music.arrayBuffer()).toString("hex"), TargetSong: updating.ID });
+											toast(AudioRes.status === 200 ? "Uploaded audio for processing successfully." : AudioRes.data, { type: AudioRes.status === 200 ? "success" : "error" });			
+										}
 									}}>{ updating.Status === SongStatus.PUBLIC ? "Unlist and Update" : "Update" }</Button>
 								</form>
 							</Box>

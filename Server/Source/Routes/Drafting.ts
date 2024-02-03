@@ -1,6 +1,7 @@
 import j from "joi";
 import ffmpeg from "fluent-ffmpeg";
 import sizeOf from "image-size";
+import cron from "node-cron";
 import { Router } from "express";
 import { RequireAuthentication, ValidateBody } from "../Modules/Middleware";
 import { Song, SongStatus } from "../Schemas/Song";
@@ -10,6 +11,21 @@ import { fromBuffer } from "file-type";
 import { rmSync, writeFileSync, renameSync, readFileSync } from "fs";
 import { FULL_SERVER_ROOT, MAX_AMOUNT_OF_DRAFTS_AT_ONCE } from "../Modules/Constants";
 import { UserPermissions } from "../Schemas/User";
+
+cron.schedule("*/2 * * * *", async () => {
+    Debug("Running cron schedule to check for broken drafts.")
+    const EligibleSongs = await Song.find({ where: { IsDraft: true, Status: SongStatus.PROCESSING } });
+    for (const SongData of EligibleSongs) {
+        if (SongData.HasMidi && SongData.HasCover && SongData.HasAudio)
+            continue;
+
+        if (SongData.CreationDate.getTime() + 60 * 1000 > Date.now())
+            continue;
+
+        SongData.Status = SongStatus.BROKEN;
+        await SongData.save();
+    }
+});
 
 const App = Router();
 
@@ -64,11 +80,22 @@ App.post("/upload/midi",
         if (req.user!.PermissionLevel! < UserPermissions.Administrator && SongData.Author.ID !== req.user!.ID)
             return res.status(403).send("You don't have permission to upload to this song.");
 
+        if (SongData.HasMidi) {
+            if (SongData.Status !== SongStatus.BROKEN && SongData.Status !== SongStatus.DEFAULT && SongData.Status !== SongStatus.DENIED && SongData.Status !== SongStatus.PUBLIC)
+                return res.status(400).send("You cannot update this song at this moment.");
+
+            rmSync(`./Saved/Songs/${req.body.TargetSong}/Data.mid`);
+            SongData.HasMidi = false;
+            SongData.IsDraft = true;
+            await SongData.save();
+        }
+
         writeFileSync(`./Saved/Songs/${req.body.TargetSong}/Data.mid`, Decoded);
         res.send(`${FULL_SERVER_ROOT}/song/download/${req.body.TargetSong}/midi.mid`);
 
         await SongData.reload();
         SongData.HasMidi = true;
+        SongData.Status = SongData.HasMidi && SongData.HasCover && SongData.HasAudio ? SongStatus.DEFAULT : SongData.Status;
         await SongData.save();
     });
 
@@ -91,6 +118,16 @@ App.post("/upload/cover",
 
         if (req.user!.PermissionLevel! < UserPermissions.Administrator && SongData.Author.ID !== req.user!.ID)
             return res.status(403).send("You don't have permission to upload to this song.");
+
+        if (SongData.HasCover) {
+            if (SongData.Status !== SongStatus.BROKEN && SongData.Status !== SongStatus.DEFAULT && SongData.Status !== SongStatus.DENIED && SongData.Status !== SongStatus.PUBLIC)
+                return res.status(400).send("You cannot update this song at this moment.");
+
+            rmSync(`./Saved/Songs/${req.body.TargetSong}/Cover.png`);
+            SongData.HasCover = false;
+            SongData.IsDraft = true;
+            await SongData.save();
+        }
 
         try {
             const ImageSize = sizeOf(Decoded);
@@ -118,6 +155,7 @@ App.post("/upload/cover",
 
         await SongData.reload();
         SongData.HasCover = true;
+        SongData.Status = SongData.HasMidi && SongData.HasCover && SongData.HasAudio ? SongStatus.DEFAULT : SongData.Status;
         await SongData.save();
 
         writeFileSync(`./Saved/Songs/${req.body.TargetSong}/Cover.png`, Decoded);
@@ -150,6 +188,7 @@ App.post("/upload/audio",
 
             rmSync(`./Saved/Songs/${req.body.TargetSong}/Chunks`, { recursive: true });
             SongData.HasAudio = false;
+            SongData.IsDraft = true;
             SongData.Status = SongStatus.PROCESSING;
             await SongData.save();
         }
@@ -158,7 +197,6 @@ App.post("/upload/audio",
         ffmpeg()
             .input(`./Saved/Songs/${req.body.TargetSong}/Audio.${ext}`)
             .outputOptions([
-                "-map 0",
                 "-use_timeline 1",
                 "-f dash"
             ])
