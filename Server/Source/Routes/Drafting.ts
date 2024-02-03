@@ -9,7 +9,7 @@ import { Debug } from "../Modules/Logger";
 import { magenta } from "colorette";
 import { fromBuffer } from "file-type";
 import { rmSync, writeFileSync, renameSync, readFileSync } from "fs";
-import { FULL_SERVER_ROOT, MAX_AMOUNT_OF_DRAFTS_AT_ONCE } from "../Modules/Constants";
+import { FULL_SERVER_ROOT, MAX_AMOUNT_OF_DRAFTS_AT_ONCE, SAVED_DATA_PATH } from "../Modules/Constants";
 import { UserPermissions } from "../Schemas/User";
 
 cron.schedule("*/2 * * * *", async () => {
@@ -84,13 +84,13 @@ App.post("/upload/midi",
             if (SongData.Status !== SongStatus.BROKEN && SongData.Status !== SongStatus.DEFAULT && SongData.Status !== SongStatus.DENIED && SongData.Status !== SongStatus.PUBLIC)
                 return res.status(400).send("You cannot update this song at this moment.");
 
-            rmSync(`./Saved/Songs/${req.body.TargetSong}/Data.mid`);
+            rmSync(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Data.mid`);
             SongData.HasMidi = false;
             SongData.IsDraft = true;
             await SongData.save();
         }
 
-        writeFileSync(`./Saved/Songs/${req.body.TargetSong}/Data.mid`, Decoded);
+        writeFileSync(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Data.mid`, Decoded);
         res.send(`${FULL_SERVER_ROOT}/song/download/${req.body.TargetSong}/midi.mid`);
 
         await SongData.reload();
@@ -123,7 +123,7 @@ App.post("/upload/cover",
             if (SongData.Status !== SongStatus.BROKEN && SongData.Status !== SongStatus.DEFAULT && SongData.Status !== SongStatus.DENIED && SongData.Status !== SongStatus.PUBLIC)
                 return res.status(400).send("You cannot update this song at this moment.");
 
-            rmSync(`./Saved/Songs/${req.body.TargetSong}/Cover.png`);
+            rmSync(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Cover.png`);
             SongData.HasCover = false;
             SongData.IsDraft = true;
             await SongData.save();
@@ -158,7 +158,7 @@ App.post("/upload/cover",
         SongData.Status = SongData.HasMidi && SongData.HasCover && SongData.HasAudio ? SongStatus.DEFAULT : SongData.Status;
         await SongData.save();
 
-        writeFileSync(`./Saved/Songs/${req.body.TargetSong}/Cover.png`, Decoded);
+        writeFileSync(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Cover.png`, Decoded);
         res.send(`${FULL_SERVER_ROOT}/song/download/${req.body.TargetSong}/cover.png`);
     });
 
@@ -186,29 +186,30 @@ App.post("/upload/audio",
             if (SongData.Status !== SongStatus.BROKEN && SongData.Status !== SongStatus.DEFAULT && SongData.Status !== SongStatus.DENIED && SongData.Status !== SongStatus.PUBLIC)
                 return res.status(400).send("You cannot update this song at this moment.");
 
-            rmSync(`./Saved/Songs/${req.body.TargetSong}/Chunks`, { recursive: true });
+            rmSync(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Chunks`, { recursive: true });
             SongData.HasAudio = false;
             SongData.IsDraft = true;
             SongData.Status = SongStatus.PROCESSING;
             await SongData.save();
         }
 
-        await writeFileSync(`./Saved/Songs/${req.body.TargetSong}/Audio.${ext}`, Decoded);
+        await writeFileSync(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Audio.${ext}`, Decoded);
         ffmpeg()
-            .input(`./Saved/Songs/${req.body.TargetSong}/Audio.${ext}`)
+            .input(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Audio.${ext}`)
+            .audioCodec("libopus")
             .outputOptions([
                 "-use_timeline 1",
                 "-f dash"
             ])
-            .output(`./Saved/Songs/${req.body.TargetSong}/Chunks/Manifest.mpd`)
+            .output(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Chunks/Manifest.mpd`)
             .on("start", cl => Debug(`ffmpeg running with ${magenta(cl)}`))
             .on("end", async () => {
                 Debug("Ffmpeg finished running");
-                rmSync(`./Saved/Songs/${req.body.TargetSong}/Audio.${ext}`);
+                rmSync(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Audio.${ext}`);
 
-                renameSync(`./Saved/Songs/${req.body.TargetSong}/Chunks/Manifest.mpd`, `./Saved/Songs/${req.body.TargetSong}/Manifest.mpd`);
+                renameSync(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Chunks/Manifest.mpd`, `${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Manifest.mpd`);
                 // i love creating thread-safe code that always works! (never gonna error trust me)
-                writeFileSync(`./Saved/Songs/${req.body.TargetSong}/Manifest.mpd`, readFileSync(`./Saved/Songs/${req.body.TargetSong}/Manifest.mpd`).toString().replace(/<ProgramInformation>[\w\d\r\n\t]*<\/ProgramInformation>/i, "<BaseURL>{BASEURL}</BaseURL>"));
+                writeFileSync(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Manifest.mpd`, readFileSync(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Manifest.mpd`).toString().replace(/<ProgramInformation>[\w\d\r\n\t]*<\/ProgramInformation>/i, "<BaseURL>{BASEURL}</BaseURL>"));
 
                 await SongData.reload();
                 SongData.HasAudio = true;
@@ -218,7 +219,7 @@ App.post("/upload/audio",
                 console.error(e);
                 console.log(stdout);
                 console.error(stderr);
-                rmSync(`./Saved/Songs/${req.body.TargetSong}/Audio.${ext}`);
+                rmSync(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Audio.${ext}`);
 
                 await SongData.reload();
                 SongData.Status = SongStatus.BROKEN;

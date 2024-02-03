@@ -1,11 +1,13 @@
-import { Box, Text } from "@primer/react";
+import { Box, Heading, Text } from "@primer/react";
 
 export function Home() {
     return (
         <>
             <Box>
-                <Text>online test 2 please kill me thanks</Text>
-                <Text>CLICK THE LOGIN ICON ON THE TOP RIGHT</Text>
+                <Heading>PARTYPACK - Placeholder Place Logo Here</Heading>
+                <Text>Welcome to Partypack! blah blah someone please make this text for me im way too lazy to do allat</Text>
+                <Heading>Quickstart Guide</Heading>
+                <Text>1. Kill yourself<br />2. Do it again</Text>
             </Box>
         </>
     )

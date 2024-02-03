@@ -1,6 +1,6 @@
 import e from "express"
 import fs, { existsSync, mkdirSync } from "fs";
-import { BODY_SIZE_LIMIT, COOKIE_SIGN_KEY, DASHBOARD_ROOT, ENDPOINT_AUTHENTICATION_ENABLED, ENDPOINT_AUTH_HEADER, ENDPOINT_AUTH_VALUE, IS_DEBUG, PORT, PROJECT_NAME, SERVER_URL } from "../Modules/Constants";
+import { SAVED_DATA_PATH, BODY_SIZE_LIMIT, COOKIE_SIGN_KEY, DASHBOARD_ROOT, ENDPOINT_AUTHENTICATION_ENABLED, ENDPOINT_AUTH_HEADER, ENDPOINT_AUTH_VALUE, IS_DEBUG, PORT, PROJECT_NAME, SERVER_URL } from "../Modules/Constants";
 import { Debug, Msg, Warn } from "../Modules/Logger";
 import { italic, magenta, red, yellow } from "colorette";
 import cookieParser from "cookie-parser";
@@ -19,8 +19,8 @@ export const App = e()
     .use(e.urlencoded({ limit: BODY_SIZE_LIMIT, extended: false }));
 
 async function Initialize() {
-    if (!existsSync("./Saved") || !existsSync("./Saved/Songs"))
-        mkdirSync("./Saved/Songs", { recursive: true });
+    if (!existsSync(SAVED_DATA_PATH) || !existsSync(`${SAVED_DATA_PATH}/Songs`))
+        mkdirSync(`${SAVED_DATA_PATH}/Songs`, { recursive: true });
 
     Debug(`The CWD is ${magenta(process.cwd())}.`);
 

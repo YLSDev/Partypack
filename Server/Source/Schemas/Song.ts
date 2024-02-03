@@ -1,5 +1,5 @@
 import { BaseEntity, BeforeInsert, BeforeRemove, Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { FULL_SERVER_ROOT } from "../Modules/Constants";
+import { FULL_SERVER_ROOT, SAVED_DATA_PATH } from "../Modules/Constants";
 import { Rating } from "./Rating";
 import { existsSync, mkdirSync, rmSync } from "fs";
 import { v4 } from "uuid";
@@ -102,7 +102,7 @@ export class Song extends BaseEntity {
     @BeforeInsert()
     Setup() {
         this.ID = v4();
-        this.Directory = `./Saved/Songs/${this.ID}`;
+        this.Directory = `${SAVED_DATA_PATH}/Songs/${this.ID}`;
         if (!existsSync(join(this.Directory, "Chunks")))
             mkdirSync(join(this.Directory, "Chunks"), { recursive: true });
 

@@ -1,5 +1,5 @@
 import { DataSource } from "typeorm";
-import { ENVIRONMENT } from "../Modules/Constants";
+import { ENVIRONMENT, SAVED_DATA_PATH } from "../Modules/Constants";
 import { Song } from "../Schemas/Song";
 import { ForcedCategory } from "../Schemas/ForcedCategory";
 import { User } from "../Schemas/User";
@@ -7,7 +7,7 @@ import { Rating } from "../Schemas/Rating";
 
 export const DBSource = new DataSource({
     type: "better-sqlite3",
-    database: `Partypack${ENVIRONMENT !== "prod" ? `-${ENVIRONMENT}` : ""}.db`,
+    database: `${SAVED_DATA_PATH}/Partypack${ENVIRONMENT !== "prod" ? `-${ENVIRONMENT}` : ""}.db`,
     synchronize: true,
     logging: false,
     entities: [

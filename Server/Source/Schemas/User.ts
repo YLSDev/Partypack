@@ -15,6 +15,15 @@ export class User extends BaseEntity {
     @PrimaryColumn()
     ID: string;
 
+    @Column({ default: "unknown" })
+    Username: string;
+
+    @Column({ default: "Unknown" })
+    DisplayName: string;
+
+    @Column({ nullable: true })
+    ProfilePictureURL?: string;
+
     @Column({ type: "simple-json" })
     Library: { SongID: string, Overriding: string }[];
 

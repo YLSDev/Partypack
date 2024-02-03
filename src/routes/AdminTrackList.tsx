@@ -24,10 +24,21 @@ export function AdminTrackList() {
             <Heading>[ADMIN] All tracks <Button sx={{ marginBottom: 2 }} onClick={() => navigate("/submissions")}>Create</Button></Heading>
             <Box className="songCategory">
                 {
-                    tracks.map(x => {
+                    tracks.map((x, i) => {
                         return <Song data={x}>
                             <Button sx={{ width: "100%", marginBottom: 1 }}>View Details</Button>
-                            <Button sx={{ width: "100%" }} variant="danger">Disable</Button>
+                            <Button sx={{ width: "100%" }} variant="danger" onClick={async () => {
+                                const Res = await axios.post("/api/drafts/delete", { TargetSong: x.ID });
+                                if (Res.status === 200)
+                                {
+                                    tracks.splice(i, 1);
+                                    setTracks([
+                                        ...tracks,
+                                    ])
+                                }
+                                
+                                toast(Res.data, { type: Res.status === 200 ? "success" : "error" });
+                            }}>Delete</Button>
                         </Song>
                     })
                 }

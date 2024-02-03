@@ -7,10 +7,14 @@
 
 .songCategory {
     display: inline-flex;
-    flex: none;
-    overflow-x: auto;
-    overflow-y: hidden;
     gap: 10px;
+    width: 100%;
+    overflow-y: hidden;
+    overflow-x: auto;
+}
+
+.songCategory > * {
+    flex-shrink: 0;
 }
 
 #__primerPortalRoot__ > div {
