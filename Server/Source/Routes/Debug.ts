@@ -1,9 +1,10 @@
+import j from "joi";
 import { Router } from "express";
-import { ENVIRONMENT } from "../Modules/Constants";
+import { ENVIRONMENT, JWT_KEY } from "../Modules/Constants";
 import { RequireAuthentication, ValidateBody } from "../Modules/Middleware";
 import { User, UserPermissions } from "../Schemas/User";
-import j from "joi";
 import { Song } from "../Schemas/Song";
+import { sign } from "jsonwebtoken";
 
 const App = Router();
 
@@ -38,6 +39,12 @@ async (req, res) => {
     await req.user!.save();
     res.json(req.user);
 })
+
+App.post("/create/auth",
+ValidateBody(j.object({
+    ID: j.string().min(10).max(25).required()
+})),
+(req, res) => res.send(sign(req.body, JWT_KEY as string)));
 
 App.get("/raw/song/:SongID",
 async (req, res) => res.json(await Song.findOne({ where: { ID: req.params.SongID } })));

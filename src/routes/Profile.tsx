@@ -1,6 +1,6 @@
 import axios from "axios";
 import { Buffer } from "buffer/";
-import { ActionList, ActionMenu, Avatar, Box, Button, Dialog, FormControl, Heading, Text, TextInput } from "@primer/react"
+import { ActionList, ActionMenu, Avatar, Box, Button, Dialog, FormControl, Heading, Label, Text, TextInput } from "@primer/react"
 import { Divider } from "@primer/react/lib-esm/ActionList/Divider";
 import { PageHeader } from "@primer/react/drafts";
 import { useContext, useEffect, useRef, useState } from "react";
@@ -8,7 +8,8 @@ import { SiteContext } from "../utils/State";
 import { useCookies } from "react-cookie";
 import { Song } from "../components/Song";
 import { toast } from "react-toastify";
-import { SongStatus } from "../utils/Extensions";
+import { SongStatus, UserPermissions } from "../utils/Extensions";
+import { LabelColorOptions } from "@primer/react/lib-esm/Label/Label";
 
 const formControlStyle = { paddingTop: 3 };
 
@@ -17,6 +18,8 @@ export function Profile() {
 	const { state, setState } = useContext(SiteContext);
 	const [, , removeCookie] = useCookies();
 	const [isActivateDialogOpen, setIsActivateDialogOpen] = useState<boolean>(false);
+	const [variant, setVariant] = useState<LabelColorOptions>("success");
+	const [labelText, setLabelText] = useState<string>("");
 	const [librarySongs, setLibrarySongs] = useState<unknown[]>([]);
 	const [bookmarkedSongs, setBookmarkedSongs] = useState<unknown[]>([]);
 	const [draftsSongs, setDraftsSongs] = useState<unknown[]>([]);
@@ -24,6 +27,44 @@ export function Profile() {
 	const [overriding, setOverriding] = useState<unknown>({});
 	const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState<boolean>(false);
 	const [updating, setUpdating] = useState<unknown>({});
+
+	useEffect(() => {
+		if (state.UserDetails === undefined)
+			return;
+
+		let Variant: LabelColorOptions = "default";
+		let LabelText: string = "";
+
+		switch (state.UserDetails.Role) {
+			case UserPermissions.User:
+				Variant = "secondary";
+				LabelText = "User";
+				break;
+			
+			case UserPermissions.VerifiedUser:
+				Variant = "success";
+				LabelText = "Verified Track Creator";
+				break;
+
+			case UserPermissions.TrackVerifier:
+				Variant = "done";
+				LabelText = "Track Verifier";
+				break;
+
+			case UserPermissions.Moderator:
+				Variant = "accent";
+				LabelText = "Moderator";
+				break;
+
+			case UserPermissions.Administrator:
+				Variant = "danger";
+				LabelText = "Administrator";
+				break;
+		}
+
+		setVariant(Variant);
+		setLabelText(LabelText);
+	}, [state.UserDetails?.Role])
 
 	useEffect(() => {
 		(async () => {
@@ -63,6 +104,7 @@ export function Profile() {
 								</PageHeader.LeadingVisual>
 								<PageHeader.Title>
 									{state.UserDetails.GlobalName} (@{state.UserDetails.Username})
+									<Label sx={{ alignSelf: "center", marginLeft: 2 }} size="large" variant={variant}>{labelText}</Label>
 								</PageHeader.Title>
 								<PageHeader.Actions>
 									<Button size="large" variant="danger" onClick={() => { removeCookie("UserDetails"); removeCookie("Token"); setState({ ...state, UserDetails: null }); window.location.assign("/") }}>Log out</Button>

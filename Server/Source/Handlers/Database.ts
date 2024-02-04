@@ -4,6 +4,7 @@ import { Song } from "../Schemas/Song";
 import { ForcedCategory } from "../Schemas/ForcedCategory";
 import { User } from "../Schemas/User";
 import { Rating } from "../Schemas/Rating";
+import { DiscordRole } from "../Schemas/DiscordRole";
 
 export const DBSource = new DataSource({
     type: "better-sqlite3",
@@ -14,7 +15,8 @@ export const DBSource = new DataSource({
         Song,
         ForcedCategory,
         User,
-        Rating
+        Rating,
+        DiscordRole
         /*join(__dirname, "..", "Schemas") + "\\*{.js,.ts}"*/ // does not work in prod
     ],
     subscribers: [],

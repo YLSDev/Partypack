@@ -199,7 +199,8 @@ App.post("/upload/audio",
             .audioCodec("libopus")
             .outputOptions([
                 "-use_timeline 1",
-                "-f dash"
+                "-f dash",
+                "-mapping_family 255"
             ])
             .output(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Chunks/Manifest.mpd`)
             .on("start", cl => Debug(`ffmpeg running with ${magenta(cl)}`))

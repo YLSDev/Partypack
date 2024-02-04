@@ -14,6 +14,7 @@ import { Tracks } from "./routes/Tracks";
 import { TrackSubmission } from "./routes/TrackSubmission";
 import { Profile } from "./routes/Profile";
 import { NotFound } from "./routes/404";
+import { Credits } from "./routes/Credits";
 import { AdminHome } from "./routes/AdminHome";
 import { AdminTrackList } from "./routes/AdminTrackList";
 import { AdminSubmissions } from "./routes/AdminSubmissions";
@@ -23,6 +24,7 @@ import merge from "deepmerge";
 
 import "react-toastify/dist/ReactToastify.css";
 import "./css/index.css";
+import { FrequentlyAskedQuestions } from "./routes/FrequentlyAskedQuestions";
 
 const DefaultTheme = merge(theme, {}); // we'll use this!! eventually!!!
 
@@ -43,9 +45,11 @@ function App() {
 									{/* User-accessible routes */}
 									<Route path="/" element={<Home />} />
 									<Route path="/download" element={<Download />} />
+									<Route path="/faq" element={<FrequentlyAskedQuestions />} />
 									<Route path="/tracks" element={<Tracks />} />
 									<Route path="/submissions" element={<TrackSubmission />} />
 									<Route path="/profile" element={<Profile />} />
+									<Route path="/credits" element={<Credits />} />
 									<Route path="*" element={<NotFound />} />
 
 									{/* Staff routes */}

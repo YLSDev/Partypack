@@ -3,6 +3,7 @@ config();
 
 import "./Handlers/Database";
 import "./Handlers/Server";
+import "./Handlers/DiscordBot";
 
 /*
     Welcome to Mc's BasedServer template! (v1.1 - 30.12.2023 update)

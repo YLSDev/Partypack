@@ -39,4 +39,14 @@ export class User extends BaseEntity {
     @ManyToMany(() => Song, { eager: true })
     @JoinTable()
     BookmarkedSongs: Song[];
+
+    public Package(IncludeRatings: boolean = false, IncludeCreatedTracks: boolean = false) {
+        return {
+            ...this,
+            Ratings: IncludeRatings ? this.Ratings : undefined,
+            Library: undefined,
+            CreatedTracks: IncludeCreatedTracks ? this.CreatedTracks : undefined,
+            BookmarkedSongs: undefined
+        }
+    }
 }

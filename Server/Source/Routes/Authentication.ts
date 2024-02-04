@@ -3,31 +3,22 @@ import jwt from "jsonwebtoken";
 import qs from "querystring";
 import j from "joi";
 import { Response, Router } from "express";
-import { BOT_TOKEN, DASHBOARD_ROOT, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_SERVER_ID, FULL_SERVER_ROOT, JWT_KEY } from "../Modules/Constants";
+import { DASHBOARD_ROOT, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_SERVER_ID, FULL_SERVER_ROOT, JWT_KEY } from "../Modules/Constants";
 import { User, UserPermissions } from "../Schemas/User";
 import { ValidateQuery } from "../Modules/Middleware";
-import { Err } from "../Modules/Logger";
+import { Bot } from "../Handlers/DiscordBot";
+import { Debug } from "../Modules/Logger";
+import { DiscordRole } from "../Schemas/DiscordRole";
+import { In } from "typeorm";
+import { magenta } from "colorette";
 
 const App = Router();
-//let DiscordServerRoleMetadata;
 
 // ? hacky, if you want, make it less hacky
 async function QuickRevokeToken(res: Response, Token: string) {
     await axios.post("https://discord.com/api/oauth2/token/revoke", qs.stringify({ token: Token, token_type_hint: "access_token" }), { auth: { username: DISCORD_CLIENT_ID!, password: DISCORD_CLIENT_SECRET! } })
     return res;
 }
-
-async function ReloadRoleData() {
-    const DRMt = await axios.get(`https://discord.com/api/guilds/${DISCORD_SERVER_ID}/roles`, { headers: { Authorization: `Bot ${BOT_TOKEN}` } });
-
-    Err(`Discord roles request failed to execute. Did you set up the .env correctly?`)
-    if (DRMt.status !== 200)
-        process.exit(-1);
-
-    //DiscordServerRoleMetadata = DRMt.data as { id: string, name: string, permissions: number }[];
-}
-
-//ReloadRoleData();
 
 App.get("/discord/url", (_ ,res) => res.send(`https://discord.com/api/oauth2/authorize?client_id=${qs.escape(DISCORD_CLIENT_ID!)}&response_type=code&redirect_uri=${qs.escape(`${FULL_SERVER_ROOT}/api/discord`)}&scope=identify`))
 
@@ -51,16 +42,42 @@ async (req, res) => {
 
     await QuickRevokeToken(res, Discord.data.access_token);
 
-    // TODO: add discord role thingy
-    let UserPermissionLevel = UserPermissions.User;
+    const AnyUserExists = await User.exists(); // automatically grant the first user on the database administrator permissions
+    let UserPermissionLevel = !AnyUserExists ? UserPermissions.Administrator : UserPermissions.User;
+
+    if (AnyUserExists && Bot.isReady()) {
+        Debug("Using Discord roles to determine user permission level since the Discord bot exists and is ready.");
+
+        const Sewer = Bot.guilds.cache.get(DISCORD_SERVER_ID as string);
+        const Membuh = await Sewer?.members.fetch(UserData.data.id);
+
+        if (Membuh) {
+            const RoulInDeightabaise = await DiscordRole.find({ where: { ID: In(Membuh.roles.cache.map(x => x.id)) }, order: { GrantedPermissions: "DESC" } });
+            if (RoulInDeightabaise.length > 0)
+                UserPermissionLevel = RoulInDeightabaise[0].GrantedPermissions;
+
+            Debug(`Detected ${magenta(RoulInDeightabaise.length)} roles that override Database permissions for user ${magenta(`@${UserData.data.username}`)}. Giving permission level ${magenta(UserPermissionLevel)}.`)
+        }
+    }
 
     let DBUser = await User.findOne({ where: { ID: UserData.data.id } });
     if (!DBUser)
         DBUser = await User.create({
             ID: UserData.data.id,
+            Username: UserData.data.username,
+            DisplayName: UserData.data.global_name ?? UserData.data.username,
+            ProfilePictureURL: `https://cdn.discordapp.com/avatars/${UserData.data.id}/${UserData.data.avatar}.webp`,
             Library: [],
             PermissionLevel: UserPermissionLevel
         }).save();
+    else
+    {
+        DBUser.Username = UserData.data.username;
+        DBUser.DisplayName = UserData.data.global_name ?? UserData.data.username;
+        DBUser.ProfilePictureURL = `https://cdn.discordapp.com/avatars/${UserData.data.id}/${UserData.data.avatar}.webp`;
+        DBUser.PermissionLevel = UserPermissionLevel;
+        await DBUser.save();
+    }
 
     const JWT = jwt.sign({ ID: UserData.data.id }, JWT_KEY!, { algorithm: "HS256" });
     const UserDetails = Buffer.from(JSON.stringify({ ID: UserData.data.id, Username: UserData.data.username, GlobalName: UserData.data.global_name, Avatar: `https://cdn.discordapp.com/avatars/${UserData.data.id}/${UserData.data.avatar}.webp`, IsAdmin: DBUser.PermissionLevel >= UserPermissions.Administrator, Role: DBUser.PermissionLevel })).toString("hex")

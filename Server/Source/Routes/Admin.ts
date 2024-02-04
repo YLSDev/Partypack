@@ -1,17 +1,13 @@
 /* eslint-disable no-case-declarations */
-import { FULL_SERVER_ROOT } from "../Modules/Constants";
+import j from "joi";
 import { Router } from "express";
 import { UserPermissions } from "../Schemas/User";
-import { Song, SongStatus } from "../Schemas/Song";
+import { Song } from "../Schemas/Song";
 import { RequireAuthentication, ValidateBody } from "../Modules/Middleware";
-import { writeFileSync } from "fs";
 import { ForcedCategory } from "../Schemas/ForcedCategory";
-import { fromBuffer } from "file-type";
-import { Debug } from "../Modules/Logger";
-import { magenta } from "colorette";
-import ffmpeg from "fluent-ffmpeg";
-import j from "joi";
-import sizeOf from "image-size";
+import { DiscordRole } from "../Schemas/DiscordRole";
+import { Bot } from "../Handlers/DiscordBot";
+import { DISCORD_SERVER_ID } from "../Modules/Constants";
 
 const App = Router();
 
@@ -28,6 +24,50 @@ App.use((req, res, next) => {
     next();
 });
 
+App.post("/create/role",
+ValidateBody(j.object({
+    ID: j.string().min(10).max(32).required(),
+    Comment: j.string().max(128).optional(),
+    PermissionLevel: j.number().valid(...(Object.values(UserPermissions).filter(x => !isNaN(Number(x))))).required()
+})),
+async (req, res) => {
+    if (!Bot.isReady())
+        return res.status(500).send("This Partypack instance has a misconfigured Discord bot.");
+
+    if (!Bot.guilds.cache.get(DISCORD_SERVER_ID as string)?.roles.cache.has(req.body.ID))
+        return res.status(404).send("This role does not exist in the Discord server.");
+
+    const Existing = await DiscordRole.findOne({ where: { ID: req.body.ID } });
+    if (Existing) {
+        Existing.GrantedPermissions = req.body.PermissionLevel as UserPermissions;
+        Existing.Comment = req.body.Comment ?? Existing.Comment;
+        await Existing.save();
+        return res.json(Existing.Package(true));
+    }
+
+    const RoleEntry = await DiscordRole.create({
+        ID: req.body.ID,
+        Comment: req.body.Comment ?? "No comment",
+        GrantedPermissions: req.body.PermissionLevel as UserPermissions
+    }).save();
+
+    res.json(RoleEntry.Package(true));
+});
+
+App.post("/delete/role",
+ValidateBody(j.object({
+    ID: j.string().min(10).max(32).required()
+})),
+async (req, res) => {
+    const RoleData = await DiscordRole.findOne({ where: { ID: req.body.ID } });
+    if (!RoleData)
+        return res.status(404).send("This role does not exist in the database.");
+
+    await RoleData.remove();
+    res.send("Removed role successfully.");
+})
+
+App.get("/roles", async (_, res) => res.json((await DiscordRole.find()).map(x => x.Package(true))));
 App.get("/tracks", async (_, res) => res.json((await Song.find()).map(x => x.Package(true))));
 
 App.post("/update/discovery",

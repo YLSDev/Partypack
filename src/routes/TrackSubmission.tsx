@@ -9,8 +9,8 @@ const formControlStyle = { paddingTop: 3 };
 export function TrackSubmission() {
     const formRef = useRef<HTMLFormElement>(null);
     const [waiting, setWaiting] = useState<boolean>(false);
-    const [Key, setKey] = useState<string>("Select a key...");
-    const [Scale, setScale] = useState<string>("Select a scale...");
+    const [Key, setKey] = useState<string>("Select key...");
+    const [Scale, setScale] = useState<string>("Select mode...");
     const [GuitarStarterType, setGuitarStarterType] = useState<string>("Select the starter type...");
 
     return (
@@ -61,7 +61,7 @@ export function TrackSubmission() {
                     </ActionMenu>
                 </FormControl>
                 <FormControl required={true} sx={formControlStyle}>
-                    <FormControl.Label>Scale</FormControl.Label>
+                    <FormControl.Label>Mode</FormControl.Label>
                     <ActionMenu>
                         <ActionMenu.Button>{Scale}</ActionMenu.Button>
                         <ActionMenu.Overlay width="medium">
@@ -126,7 +126,7 @@ export function TrackSubmission() {
                     console.log(formRef);
 
                     if (formRef.current == null)
-                        return;
+                        return setWaiting(false);
 
                     const Name = (formRef.current[0] as HTMLInputElement).value;
                     const ArtistName = (formRef.current[1] as HTMLInputElement).value;
@@ -162,14 +162,17 @@ export function TrackSubmission() {
                     };
 
                     if (Object.values(B).includes(NaN) || Object.values(B).includes(null) || Object.values(B).includes(undefined))
+                    {
+                        setWaiting(false);
                         return toast("One or more required fields missing.", { type: "error" });
+                    }
 
                     const SongData = await axios.post("/api/drafts/create", B);
 
                     toast(SongData.data, { type: SongData.status === 200 ? "success" : "error" });
 
                     if (SongData.status !== 200)
-                        return;
+                        return setWaiting(false);
 
                     const MidiRes = await axios.post("/api/drafts/upload/midi", { Data: Buffer.from(await Midi.arrayBuffer()).toString("hex"), TargetSong: SongData.data.ID });
                     toast(MidiRes.status === 200 ? "Uploaded MIDI chart successfully." : MidiRes.data, { type: MidiRes.status === 200 ? "success" : "error" });

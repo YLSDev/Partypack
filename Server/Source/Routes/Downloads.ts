@@ -8,6 +8,8 @@ import { UserPermissions } from "../Schemas/User";
 
 const App = Router();
 
+App.get("/api/download/partypacker", (_, res) => res.redirect("https://cdn.discordapp.com/attachments/1202728144935583804/1203083689840607252/Partypacker_OT2.zip"))
+
 App.get("/song/download/:InternalID/:File",
 RequireAuthentication(),
 async (req, res) => {
@@ -60,7 +62,7 @@ async (req, res) => {
     if (!/^[\w\-.]+$/g.test(req.params.File))
         return res.status(400).send("File name failed validation.");
 
-    if (!req.params.File.endsWith(".m4s"))
+    if (!req.params.File.endsWith(".m4s") && !req.params.File.endsWith(".webm"))
         return res.sendStatus(403);
 
     if (!existsSync(`${SongData.Directory}/Chunks/${req.params.File}`))
