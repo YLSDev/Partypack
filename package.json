@@ -25,6 +25,7 @@
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
     "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
     "@primer/react": "^36.5.0",
+    "@types/axios": "^0.14.0",
     "axios": "^1.6.5",
     "buffer": "^6.0.3",
     "deepmerge": "^4.3.1",

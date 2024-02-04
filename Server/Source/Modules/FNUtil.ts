@@ -1,26 +1,41 @@
-import axios from "axios";
 import { Err } from "./Logger";
 import { red } from "colorette";
 import { FULL_SERVER_ROOT } from "./Constants";
 import { User } from "../Schemas/User";
 import { Song } from "../Schemas/Song";
 
-export let FullFortnitePages: {[key: string]: any} | null = null;
+export let FullFortnitePages: { [key: string]: any } | null = null;
 export let OriginalSparks: {[key: string]: any} | null = null;
 let LastContentDownloadDate: Date = new Date(0); // set it to 1970 as default cuz im not boutta check if its null
 
 GenerateFortnitePages(null);
 
 export async function GenerateFortnitePages(ForUser: User | null): Promise<{ Success: boolean, FNPages: { [key: string]: unknown } | null }> {
-    const { status, data } = // check if 30 minutes have passed since last content update. if so, get a new copy of pages, if not, fuck off
+    let status;
+    let data;
+    if (FullFortnitePages === null || Date.now() > LastContentDownloadDate.getTime() + 30 * 60 * 1000) {
+        const response = await fetch("https://fortnitecontent-website-prod07.ol.epicgames.com/content/api/pages/fortnite-game");
+        status = response.status;
+        data = await response.json();
+    } else {
+        status = 200;
+        data = FullFortnitePages;
+    }
+    /*const { status, data } = // check if 30 minutes have passed since last content update. if so, get a new copy of pages, if not, fuck off
         FullFortnitePages === null || Date.now() > LastContentDownloadDate.getTime() + 30 * 60 * 1000 ?
-            await axios.get("https://fortnitecontent-website-prod07.ol.epicgames.com/content/api/pages/fortnite-game") :
-            { status: 200, data: FullFortnitePages };
+            await fetch("https://fortnitecontent-website-prod07.ol.epicgames.com/content/api/pages/fortnite-game") :
+            FullFortnitePages;*/
+    
+    let OGSparks;
 
-    const OGSparks =
-        OriginalSparks === null || Date.now() > LastContentDownloadDate.getTime() + 30 * 60 * 1000 ?
-                await axios.get("https://fortnitecontent-website-prod07.ol.epicgames.com/content/api/pages/fortnite-game/spark-tracks") :
-                { status: 200, data: OriginalSparks };
+    if (OriginalSparks === null || Date.now() > LastContentDownloadDate.getTime() + 30 * 60 * 1000) {
+        const response = await fetch("https://fortnitecontent-website-prod07.ol.epicgames.com/content/api/pages/fortnite-game/spark-tracks");
+        OGSparks = {status: 200, data: await response.json()}
+    } else {
+        OGSparks = OriginalSparks
+    }
+
+
 
     FullFortnitePages = {
         ...data,
