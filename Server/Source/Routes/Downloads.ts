@@ -8,7 +8,7 @@ import { UserPermissions } from "../Schemas/User";
 
 const App = Router();
 
-App.get("/api/download/partypacker", (_, res) => res.redirect("https://cdn.discordapp.com/attachments/1202728144935583804/1203083689840607252/Partypacker_OT2.zip"))
+App.get("/api/download/partypacker", (_, res) => res.redirect(`${FULL_SERVER_ROOT}/assets/Partypack-Launcher.zip`))
 
 App.get("/song/download/:InternalID/:File",
 RequireAuthentication(),
@@ -73,13 +73,12 @@ async (req, res) => {
 });
 
 App.get("/:InternalID",
-RequireAuthentication(),
 async (req, res, next) => {
     const SongData = await Song.findOne({ where: { ID: req.params.InternalID }, relations: { Author: true } });
     if (!SongData)
         return next(); // trust me bro
 
-    if (SongData.IsDraft && (req.user!.PermissionLevel! < UserPermissions.VerifiedUser && SongData.Author.ID !== req.user!.ID))
+    if (SongData.IsDraft && ((req.user ? req.user.PermissionLevel < UserPermissions.VerifiedUser : true) && SongData.Author.ID !== req.user!.ID))
         return res.status(403).send("You cannot use this track, because it's a draft.");
 
     const BaseURL = `${FULL_SERVER_ROOT}/song/download/${SongData.ID}/`;

@@ -6,6 +6,8 @@ import j from "joi";
 
 const App = Router();
 
+App.use((_, res) => res.send("disabled atm (sowwy)"));
+
 App.get("/:InternalID", async (req, res) => {
     const SongData = await Song.findOne({ where: { ID: req.params.InternalID }, relations: { Ratings: true } });
     if (!SongData)
