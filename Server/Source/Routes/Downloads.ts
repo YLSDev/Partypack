@@ -31,7 +31,7 @@ async (req, res) => {
                         {
                             type: "main",
                             language: "en",
-                            url: `${BaseURL}master.blurl`,
+                            url: `${SongData.Directory}/Manifest.mpd`,
                             data: readFileSync(`${SongData.Directory}/Manifest.mpd`).toString().replaceAll("{BASEURL}", BaseURL)
                         }
                     ],
@@ -63,10 +63,10 @@ async (req, res) => {
         return res.status(400).send("File name failed validation.");
 
     if (!req.params.File.endsWith(".m4s") && !req.params.File.endsWith(".webm"))
-        return res.sendStatus(403);
+        return res.sendStatus(403).send("Unsupported File Format.");
 
     if (!existsSync(`${SongData.Directory}/Chunks/${req.params.File}`))
-        return res.sendStatus(404);
+        return res.sendStatus(404).send("Chunk not found.");
 
     res.set("content-type", "video/mp4")
     res.send(readFileSync(`${SongData.Directory}/Chunks/${req.params.File}`));
