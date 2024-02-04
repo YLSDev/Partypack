@@ -73,7 +73,7 @@ async (req, res) => {
 });
 
 App.get("/:InternalID",
-RequireAuthentication()
+RequireAuthentication(),
 async (req, res, next) => {
     const SongData = await Song.findOne({ where: { ID: req.params.InternalID }, relations: { Author: true } });
     if (!SongData)
