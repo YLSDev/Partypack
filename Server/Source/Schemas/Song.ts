@@ -1,4 +1,4 @@
-import { BaseEntity, BeforeInsert, BeforeRemove, Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, BeforeInsert, BeforeRemove, Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, IsNull } from "typeorm";
 import { FULL_SERVER_ROOT, SAVED_DATA_PATH } from "../Modules/Constants";
 import { Rating } from "./Rating";
 import { existsSync, mkdirSync, rmSync } from "fs";
@@ -20,6 +20,9 @@ export enum SongStatus {
 export class Song extends BaseEntity {
     @PrimaryGeneratedColumn("uuid")
     ID: string;
+
+    @Column("uuid", { nullable: true, default: null })
+    PID: string;
 
     @ManyToOne(() => User, U => U.CreatedTracks)
     Author: User;
@@ -102,6 +105,10 @@ export class Song extends BaseEntity {
     @BeforeInsert()
     Setup() {
         this.ID = v4();
+
+        if (this.PID == undefined) // im lazy but this will work regardless
+            this.PID = this.ID; // By default they should be the same to save space, if we *need* a preview stream later we can change this when processing audio
+
         this.Directory = `${SAVED_DATA_PATH}/Songs/${this.ID}`;
         if (!existsSync(join(this.Directory, "Chunks")))
             mkdirSync(join(this.Directory, "Chunks"), { recursive: true });
