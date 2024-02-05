@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { FullFortnitePages, GenerateFortnitePages } from "../Modules/FNUtil";
-import axios from "axios";
 import { IS_DEBUG } from "../Modules/Constants";
 import { RequireAuthentication } from "../Modules/Middleware";
 
@@ -42,11 +41,11 @@ App.get("/content/api/pages/fortnite-game/:Section", RequireAuthentication(), as
     if (!CachedSection)
         return res.status(404).send("funny section not found haha kill me");
 
-    const ContentFromServer = await axios.get(`https://fortnitecontent-website-prod07.ol.epicgames.com/content/api/pages/fortnite-game/${CachedSection._title}`);
+    const ContentFromServer = await fetch(`https://fortnitecontent-website-prod07.ol.epicgames.com/content/api/pages/fortnite-game/${CachedSection._title}`)
     if (ContentFromServer.status !== 200)
-        return res.status(404).json({ error: IS_DEBUG ? ContentFromServer.data : "Fortnite server returned an error." });
+        return res.status(404).json({ error: IS_DEBUG ? await ContentFromServer.text() : "Fortnite server returned an error." });
 
-    res.json(ContentFromServer.data);
+    res.json(await ContentFromServer.json());
 })
 
 export default {
