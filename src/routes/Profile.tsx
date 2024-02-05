@@ -270,7 +270,7 @@ export function Profile() {
 											}}>Delete draft</Button>
 										</Song>;
 									})
-									: <Text>You have no bookmarked songs.</Text>
+									: <Text>You have no drafts.</Text>
 							}
 						</Box>
 					</Box> :
