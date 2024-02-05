@@ -16,7 +16,7 @@ declare global {
 export function RequireAuthentication(Relations?: object) {
     return async (req: Request, res: Response, next: NextFunction) => {
         if (!req.header("X-Partypack-Token") && !req.cookies["Token"] && !req.header("Authorization"))
-            return res.status(401).send("This endpoint requires authorization.");
+            return res.status(401).send("You must be logged in to perform this action.");
 
         let JWT: JwtPayload;
         try {
