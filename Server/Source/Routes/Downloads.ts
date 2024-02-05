@@ -46,7 +46,7 @@ async (req, res) => {
         
         case "cover":
         case "cover.png":
-            return existsSync(`${SongData.Directory}/Cover.png`) ? res.set("content-type", "image/png").send(readFileSync(`${SongData.Directory}/Cover.png`)) : res.sendStatus(404);
+            return existsSync(`${SongData.Directory}/Cover.png`) ? res.set("content-type", "image/png").send(readFileSync(`${SongData.Directory}/Cover.png`)) : res.status(404).send("Cover not found.");
 
         // ! we are not risking a lawsuit
         //case "midi.dat": // dont forget to encrypt!
@@ -56,17 +56,17 @@ async (req, res) => {
         case "midi":
         case "midi.mid":
         case "midi.midi": // forget to encrypt!
-            return existsSync(`${SongData.Directory}/Data.mid`) ? res.set("content-type", "application/octet-stream").send(readFileSync(`${SongData.Directory}/Data.mid`)) : res.sendStatus(404);
+            return existsSync(`${SongData.Directory}/Data.mid`) ? res.set("content-type", "application/octet-stream").send(readFileSync(`${SongData.Directory}/Data.mid`)) : res.status(404).send("Midi not found.");
     }
     
     if (!/^[\w\-.]+$/g.test(req.params.File))
         return res.status(400).send("File name failed validation.");
 
     if (!req.params.File.endsWith(".m4s") && !req.params.File.endsWith(".webm"))
-        return res.sendStatus(403).send("Unsupported File Format.");
+        return res.status(403).send("Unsupported File Format.");
 
     if (!existsSync(`${SongData.Directory}/Chunks/${req.params.File}`))
-        return res.sendStatus(404).send("Chunk not found.");
+        return res.status(404).send("Chunk not found.");
 
     res.set("content-type", "video/mp4")
     res.send(readFileSync(`${SongData.Directory}/Chunks/${req.params.File}`));
