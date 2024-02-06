@@ -74,7 +74,6 @@ async (req, res) => {
 
     res.set("content-type", "video/mp4")
     res.send(readFileSync(ChunkPath));
-    console.log(`Sending back ${ChunkPath}`);
 });
 
 App.get("/:InternalID",
@@ -85,7 +84,6 @@ async (req, res, next) => {
         return next(); // trust me bro
 
     const IsPreview = SongData.ID != SongData.PID && req.params.InternalID == SongData.PID;
-    console.log(`We have ${IsPreview ? `PREVIEW` : `MAIN`} request`);
 
     if (SongData.IsDraft && ((req.user ? req.user.PermissionLevel < UserPermissions.VerifiedUser : true) && SongData.Author.ID !== req.user!.ID))
         return res.status(403).send("You cannot use this track, because it's a draft.");
