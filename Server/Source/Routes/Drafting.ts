@@ -220,9 +220,9 @@ App.post("/upload/audio",
                     if (err) // FUCK
                         return console.log(err);
                     
-                    if (metadata && metadata.streams && metadata.streams[0].codec_type == 'audio' && metadata.streams[0].channels && metadata.streams[0].channels > 2) // jfc ts
+                    if (metadata.streams[0].codec_type == "audio" && metadata.streams[0].channels! > 2)
                     {
-                        Debug(`Creating preview stream as it's needed...`);
+                        Debug("Creating preview stream as it's needed...");
                         
                         // Oh shit!! we need a preview stream!! so let's make one.
 
@@ -232,9 +232,11 @@ App.post("/upload/audio",
 
                         // Then, figure out which channels from the original file to put into each channel on the output file.
                         // We already ran ffprobe earlier so we can just reuse that lol
+
+                        // Output with 10 channels is "pan=stereo|c0=c0+c2+c4+c6+c8|c1=c1+c3+c5+c7+c9", ffmpeg uses this to decide how to downmix
                         var FilterLeft = "pan=stereo|c0=";
                         var FilterRight = "|c1=";
-                        for (var i = 0; i < metadata.streams[0].channels; i++)
+                        for (var i = 0; i < metadata.streams[0].channels!; i++)
                         {
                             if (i == 0 || i % 2 == 0)
                                 FilterLeft += `${i == 0 ? "" : "+"}c${i}` // out for 0 = "c0", out for 2 = "+c2"
@@ -256,7 +258,7 @@ App.post("/upload/audio",
                                 .output(`${AudioPath}/PreviewChunks/PreviewManifest.mpd`)
                                 .on("start", cl => Debug(`Creating preview stream with ${magenta(cl)}`))
                                 .on("end", async () => {
-                                    Debug(`Preview stream created`);
+                                    Debug("Preview stream created");
                                     // Move the mpd out
                                     renameSync(`${AudioPath}/PreviewChunks/PreviewManifest.mpd`, `${AudioPath}/PreviewManifest.mpd`);
                                     writeFileSync(`${AudioPath}/PreviewManifest.mpd`, readFileSync(`${AudioPath}/PreviewManifest.mpd`).toString().replace(/<ProgramInformation>[\w\d\r\n\t]*<\/ProgramInformation>/i, "<BaseURL>{BASEURL}</BaseURL>"));

@@ -21,8 +21,8 @@ export class Song extends BaseEntity {
     @PrimaryGeneratedColumn("uuid")
     ID: string;
 
-    @Column("uuid", { nullable: true, default: null })
-    PID: string;
+    @Column("uuid", { nullable: true })
+    PID?: string;
 
     @ManyToOne(() => User, U => U.CreatedTracks)
     Author: User;
@@ -106,7 +106,7 @@ export class Song extends BaseEntity {
     Setup() {
         this.ID = v4();
 
-        if (this.PID == undefined) // im lazy but this will work regardless
+        if (this.PID === undefined) // im lazy but this will work regardless
             this.PID = this.ID; // By default they should be the same to save space, if we *need* a preview stream later we can change this when processing audio
 
         this.Directory = `${SAVED_DATA_PATH}/Songs/${this.ID}`;
