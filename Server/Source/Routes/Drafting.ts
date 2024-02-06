@@ -183,16 +183,21 @@ App.post("/upload/audio",
         if (req.user!.PermissionLevel! < UserPermissions.Administrator && SongData.Author.ID !== req.user!.ID)
             return res.status(403).send("You don't have permission to upload to this song.");
 
+        const ChunksPath = `${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Chunks`;
+
         if (SongData.HasAudio) {
             if (SongData.Status !== SongStatus.BROKEN && SongData.Status !== SongStatus.DEFAULT && SongData.Status !== SongStatus.DENIED && SongData.Status !== SongStatus.PUBLIC)
                 return res.status(400).send("You cannot update this song at this moment.");
 
-            rmSync(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Chunks`, { recursive: true });
+            rmSync(ChunksPath, { recursive: true });
             SongData.HasAudio = false;
             SongData.IsDraft = true;
             SongData.Status = SongStatus.PROCESSING;
             await SongData.save();
         }
+
+        if (!existsSync(ChunksPath))
+            mkdirSync(ChunksPath);
 
         const AudioPath = `${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}`;
 
