@@ -8,7 +8,8 @@ import { Song, SongStatus } from "../Schemas/Song";
 import { Debug } from "../Modules/Logger";
 import { magenta } from "colorette";
 import { fromBuffer } from "file-type";
-import { rmSync, writeFileSync, renameSync, readFileSync } from "fs";
+import { v4 } from "uuid";
+import { rmSync, writeFileSync, renameSync, readFileSync, existsSync, mkdirSync } from "fs";
 import { FULL_SERVER_ROOT, MAX_AMOUNT_OF_DRAFTS_AT_ONCE, SAVED_DATA_PATH } from "../Modules/Constants";
 import { UserPermissions } from "../Schemas/User";
 
@@ -182,45 +183,114 @@ App.post("/upload/audio",
         if (req.user!.PermissionLevel! < UserPermissions.Administrator && SongData.Author.ID !== req.user!.ID)
             return res.status(403).send("You don't have permission to upload to this song.");
 
+        const ChunksPath = `${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Chunks`;
+
         if (SongData.HasAudio) {
             if (SongData.Status !== SongStatus.BROKEN && SongData.Status !== SongStatus.DEFAULT && SongData.Status !== SongStatus.DENIED && SongData.Status !== SongStatus.PUBLIC)
                 return res.status(400).send("You cannot update this song at this moment.");
 
-            rmSync(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Chunks`, { recursive: true });
+            rmSync(ChunksPath, { recursive: true });
             SongData.HasAudio = false;
             SongData.IsDraft = true;
             SongData.Status = SongStatus.PROCESSING;
             await SongData.save();
         }
 
-        await writeFileSync(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Audio.${ext}`, Decoded);
+        if (!existsSync(ChunksPath))
+            mkdirSync(ChunksPath);
+
+        const AudioPath = `${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}`;
+
+        await writeFileSync(`${AudioPath}/Audio.${ext}`, Decoded);
         ffmpeg()
-            .input(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Audio.${ext}`)
+            .input(`${AudioPath}/Audio.${ext}`)
             .audioCodec("libopus")
             .outputOptions([
                 "-use_timeline 1",
                 "-f dash",
                 "-mapping_family 255"
             ])
-            .output(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Chunks/Manifest.mpd`)
+            .output(`${AudioPath}/Chunks/Manifest.mpd`)
             .on("start", cl => Debug(`ffmpeg running with ${magenta(cl)}`))
             .on("end", async () => {
                 Debug("Ffmpeg finished running");
-                rmSync(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Audio.${ext}`);
 
-                renameSync(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Chunks/Manifest.mpd`, `${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Manifest.mpd`);
-                // i love creating thread-safe code that always works! (never gonna error trust me)
-                writeFileSync(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Manifest.mpd`, readFileSync(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Manifest.mpd`).toString().replace(/<ProgramInformation>[\w\d\r\n\t]*<\/ProgramInformation>/i, "<BaseURL>{BASEURL}</BaseURL>"));
+                // Check channels
+                ffmpeg.ffprobe(`${AudioPath}/Audio.${ext}`, async (err, metadata) => {
+                    if (err) // FUCK
+                        return console.log(err);
+                    
+                    if (metadata.streams[0].codec_type == "audio" && metadata.streams[0].channels! > 2)
+                    {
+                        Debug("Creating preview stream as it's needed...");
+                        
+                        // Oh shit!! we need a preview stream!! so let's make one.
 
-                await SongData.reload();
-                SongData.HasAudio = true;
-                await SongData.save();
+                        // Make a dir for it first
+                        if (!existsSync(`${AudioPath}/PreviewChunks`))
+                            mkdirSync(`${AudioPath}/PreviewChunks`, { recursive: true });
+
+                        // Then, figure out which channels from the original file to put into each channel on the output file.
+                        // We already ran ffprobe earlier so we can just reuse that lol
+
+                        // Output with 10 channels is "pan=stereo|c0=c0+c2+c4+c6+c8|c1=c1+c3+c5+c7+c9", ffmpeg uses this to decide how to downmix
+                        var FilterLeft = "pan=stereo|c0=";
+                        var FilterRight = "|c1=";
+                        for (var i = 0; i < metadata.streams[0].channels!; i++)
+                        {
+                            if (i == 0 || i % 2 == 0)
+                                FilterLeft += `${i == 0 ? "" : "+"}c${i}` // out for 0 = "c0", out for 2 = "+c2"
+                            else
+                                FilterRight += `${i == 1 ? "" : "+"}c${i}` // out for 1 = "c1", out for 3 = "+c3"
+                        }
+                        
+                        // Need to wait for this before removing the source file, but since it won't ALWAYS get called we don't put the rmSync in here
+                        await new Promise<void>((resolve, reject) => {
+                            ffmpeg()
+                                .input(`${AudioPath}/Audio.${ext}`)
+                                .audioCodec("libopus")
+                                .audioFilter(FilterLeft + FilterRight)
+                                .outputOptions([
+                                    "-use_timeline 1",
+                                    "-f dash",
+                                    "-ac 2", // downmix
+                                ])
+                                .output(`${AudioPath}/PreviewChunks/PreviewManifest.mpd`)
+                                .on("start", cl => Debug(`Creating preview stream with ${magenta(cl)}`))
+                                .on("end", async () => {
+                                    Debug("Preview stream created");
+                                    // Move the mpd out
+                                    renameSync(`${AudioPath}/PreviewChunks/PreviewManifest.mpd`, `${AudioPath}/PreviewManifest.mpd`);
+                                    writeFileSync(`${AudioPath}/PreviewManifest.mpd`, readFileSync(`${AudioPath}/PreviewManifest.mpd`).toString().replace(/<ProgramInformation>[\w\d\r\n\t]*<\/ProgramInformation>/i, "<BaseURL>{BASEURL}</BaseURL>"));
+                                    SongData.PID = v4();
+                                    await SongData.save();
+                                    resolve();
+                                })
+                                .on("error", async (e, stdout, stderr) => {
+                                    console.error(e);
+                                    console.log(stdout);
+                                    console.error(stderr);
+                                    reject(e);
+                                }).run();
+                        });
+                    }
+                
+                    rmSync(`${AudioPath}/Audio.${ext}`);
+    
+                    renameSync(`${AudioPath}/Chunks/Manifest.mpd`, `${AudioPath}/Manifest.mpd`);
+                    // i love creating thread-safe code that always works! (never gonna error trust me)
+                    writeFileSync(`${AudioPath}/Manifest.mpd`, readFileSync(`${AudioPath}/Manifest.mpd`).toString().replace(/<ProgramInformation>[\w\d\r\n\t]*<\/ProgramInformation>/i, "<BaseURL>{BASEURL}</BaseURL>"));
+    
+                    await SongData.reload();
+                    SongData.HasAudio = true;
+                    await SongData.save();
+                });
             })
             .on("error", async (e, stdout, stderr) => {
                 console.error(e);
                 console.log(stdout);
                 console.error(stderr);
-                rmSync(`${SAVED_DATA_PATH}/Songs/${req.body.TargetSong}/Audio.${ext}`);
+                rmSync(`${AudioPath}/Audio.${ext}`);
 
                 await SongData.reload();
                 SongData.Status = SongStatus.BROKEN;

@@ -111,7 +111,7 @@ export async function GenerateFortnitePages(ForUser: User | null): Promise<{ Suc
                 siv: "Vocals", // siv - Vocals ID to use (only Vocals possible)
                 qi: JSON.stringify({ // qi - Query Information (frontend related display stuff and language vocals channel related stuff)
                     sid: Song.ID, // sid - Song UUID
-                    pid: Song.ID, // pid - Playlist Asset ID
+                    pid: Song.PID, // pid - Playlist Asset ID
                     title: OriginalTrack._title, // title - Song Name - same as _title
                     tracks: [
                         {
