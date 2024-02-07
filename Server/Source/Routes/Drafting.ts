@@ -254,6 +254,7 @@ App.post("/upload/audio",
                                     "-use_timeline 1",
                                     "-f dash",
                                     "-ac 2", // downmix
+                                    "-t 30" // max of 30 seconds (requested by mc)
                                 ])
                                 .output(`${AudioPath}/PreviewChunks/PreviewManifest.mpd`)
                                 .on("start", cl => Debug(`Creating preview stream with ${magenta(cl)}`))
