@@ -15,7 +15,6 @@ const App = Router();
 
 // ? hacky, if you want, make it less hacky
 async function QuickRevokeToken(res: Response, Token: string) {
-
     await fetch("https://discord.com/api/oauth2/token/revoke", {
         method: "POST",
         headers: {
