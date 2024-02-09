@@ -91,7 +91,7 @@ export function TrackSubmission() {
                     <FormControl.Caption>You can use the #tools-and-resources channel to find useful resources on how to create MIDIs.</FormControl.Caption>
                 </FormControl>
                 <FormControl required={true} sx={formControlStyle}>
-                    <FormControl.Label>Audio File (.m4a, .mp3, .wav)</FormControl.Label>
+                    <FormControl.Label>Audio File (.m4a, .mp3, .wav, .ogg)</FormControl.Label>
                     <TextInput type="file" />
                     <FormControl.Caption>This will play in the background of your song. Make sure it was exported from REAPER.</FormControl.Caption>
                 </FormControl>

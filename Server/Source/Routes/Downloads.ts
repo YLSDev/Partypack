@@ -5,6 +5,7 @@ import { CreateBlurl } from "../Modules/BLURL";
 import { Song } from "../Schemas/Song";
 import { RequireAuthentication } from "../Modules/Middleware";
 import { UserPermissions } from "../Schemas/User";
+import path from "path";
 
 const App = Router();
 
@@ -14,9 +15,12 @@ App.get("/song/download/:InternalID/:File",
 RequireAuthentication(),
 async (req, res) => {
     //const Song = AvailableFestivalSongs.find(x => x.UUID === req.params.SongUUID);
-    const SongData = await Song.findOne({ where: { ID: req.params.InternalID }, relations: { Author: true } });
+    const SongData = await Song.findOne({ where: [ { ID: req.params.InternalID}, { PID: req.params.InternalID }  ], relations: { Author: true } });
     if (!SongData)
         return res.status(404).send("Song not found.");
+
+    const IsPreview = SongData.ID != SongData.PID && req.params.InternalID == SongData.PID;
+    const ManifestPath = `${SongData.Directory}/${IsPreview ? `PreviewManifest.mpd` : `Manifest.mpd`}`;
     
     if (SongData.IsDraft && (req.user!.PermissionLevel! < UserPermissions.VerifiedUser && SongData.Author.ID !== req.user!.ID))
         return res.status(403).send("You cannot use this track, because it's a draft.");
@@ -31,8 +35,8 @@ async (req, res) => {
                         {
                             type: "main",
                             language: "en",
-                            url: `${SongData.Directory}/Manifest.mpd`,
-                            data: readFileSync(`${SongData.Directory}/Manifest.mpd`).toString().replaceAll("{BASEURL}", BaseURL)
+                            url: `${BaseURL}master.blurl`,
+                            data: readFileSync(ManifestPath).toString().replaceAll("{BASEURL}", BaseURL)
                         }
                     ],
                     type: "vod",
@@ -42,7 +46,7 @@ async (req, res) => {
 
         case "manifest":
         case "manifest.mpd":
-            return res.set("content-type", "application/dash+xml").send(Buffer.from(readFileSync(`${SongData.Directory}/Manifest.mpd`).toString().replaceAll("{BASEURL}", BaseURL)));
+            return res.set("content-type", "application/dash+xml").send(Buffer.from(readFileSync(ManifestPath).toString().replaceAll("{BASEURL}", BaseURL)));
         
         case "cover":
         case "cover.png":
@@ -65,27 +69,37 @@ async (req, res) => {
     if (!req.params.File.endsWith(".m4s") && !req.params.File.endsWith(".webm"))
         return res.sendStatus(403).send("Unsupported File Format.");
 
-    if (!existsSync(`${SongData.Directory}/Chunks/${req.params.File}`))
-        return res.sendStatus(404).send("Chunk not found.");
+    const ChunkPath = `${SongData.Directory}/${IsPreview ? `PreviewChunks` : `Chunks`}/${req.params.File}`
+    if (!existsSync(ChunkPath))
+        return res.status(404).send("Chunk not found.");
 
     res.set("content-type", "video/mp4")
-    res.send(readFileSync(`${SongData.Directory}/Chunks/${req.params.File}`));
+    res.send(readFileSync(ChunkPath));
 });
 
 App.get("/:InternalID",
+(req, res, next) => {
+    // send back index.html when the internal id is not a uuid - causes issues with reloading on sub-pages otherwise
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(req.params.InternalID))
+        return res.sendFile(path.join(process.cwd(), "dist", "index.html"));
+
+    next();
+},
 RequireAuthentication(),
-async (req, res, next) => {
-    const SongData = await Song.findOne({ where: { ID: req.params.InternalID }, relations: { Author: true } });
+async (req, res) => {
+    const SongData = await Song.findOne({ where: [ { ID: req.params.InternalID }, { PID: req.params.InternalID } ], relations: { Author: true } });
     if (!SongData)
-        return next(); // trust me bro
+        return res.status(404).send("Track not found.");
+
+    const IsPreview = SongData.ID != SongData.PID && req.params.InternalID == SongData.PID;
 
     if (SongData.IsDraft && ((req.user ? req.user.PermissionLevel < UserPermissions.VerifiedUser : true) && SongData.Author.ID !== req.user!.ID))
         return res.status(403).send("You cannot use this track, because it's a draft.");
 
-    const BaseURL = `${FULL_SERVER_ROOT}/song/download/${SongData.ID}/`;
+    const BaseURL = `${FULL_SERVER_ROOT}/song/download/${IsPreview ? SongData.PID : SongData.ID}/`;
     res.set("content-type", "application/json");
     res.json({
-        playlist: Buffer.from(readFileSync(`${SongData.Directory}/Manifest.mpd`).toString().replaceAll("{BASEURL}", BaseURL)).toString("base64"),
+        playlist: Buffer.from(readFileSync(`${SongData.Directory}/${IsPreview ? `PreviewManifest.mpd` : `Manifest.mpd`}`).toString().replaceAll("{BASEURL}", BaseURL)).toString("base64"),
         playlistType: "application/dash+xml",
         metadata: {
             assetId: "",
